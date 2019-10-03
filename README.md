@@ -1,7 +1,7 @@
 # setup-chromedriver
 
 <p align="left">
-  <a href="https://github.com/nanasess/setup-chromedriver"><img alt="GitHub Actions status" src="https://github.com/nanasess/setup-chromedriver/workflows/Main%20workflow/badge.svg"></a>
+  <a href="https://github.com/nanasess/setup-chromedriver"><img alt="GitHub Actions status" src="https://github.com/nanasess/setup-chromedriver/workflows/Test%20chromedriver/badge.svg"></a>
   <a href="https://github.com/nanasess/setup-chromedriver/blob/master/LICENSE"><img alt="LICENSE" src="https://img.shields.io/badge/license-MIT-428f7e.svg"></a>
 </p>
 
