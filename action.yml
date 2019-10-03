@@ -1,10 +1,7 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
-inputs:
-  myInput:              # change this
-    description: 'input description here'
-    default: 'default value if applicable'
+name: 'setup-chromedriver'
+description: 'Setup chromedriver'
+author: 'nanasess'
 runs:
   using: 'node12'
-  main: 'lib/main.js'
+  main: 'lib/setup-chromedriver.js'
+
