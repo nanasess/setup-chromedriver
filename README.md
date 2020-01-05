@@ -16,6 +16,7 @@ steps:
 - uses: actions/checkout@master
 - uses: nanasess/setup-chromedriver@master
   with:
+    # Optional: do not specify to match Chrome's version
     chromedriver-version: '77.0.3865.40'
 - run: |
     export DISPLAY=:99
