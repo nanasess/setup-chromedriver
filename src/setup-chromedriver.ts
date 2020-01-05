@@ -5,7 +5,7 @@ import * as path from "path";
 async function run() {
   try {
     console.log(`##setup chromedriver`);
-    const version = core.getInput("chromedriver-version", { required: true });
+    const version = core.getInput("chromedriver-version", { required: false });
     const plat = process.platform;
     let arch = "linux";
     switch (plat) {
