@@ -1,5 +1,19 @@
 name: "Test chromedriver"
-on: [ push, pull_request ]
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+    paths:
+      - '**'
+      - '!*.md'
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '**'
+      - '!*.md'
 
 jobs:
   test:
@@ -12,9 +26,10 @@ jobs:
     - run: npm test
     - uses: ./
       with:
-        chromedriver-version: '77.0.3865.40'
+        chromedriver-version: '80.0.3987.106'
     - name: setup
       run: |
+        google-chrome --version
         sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
@@ -32,6 +47,7 @@ jobs:
     - uses: ./
     - name: setup
       run: |
+        google-chrome --version
         sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
