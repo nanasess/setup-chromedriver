@@ -19,14 +19,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - run: npm ci
     - run: npm run build
     - run: npm test
+    - run: |
+        CHROME_VERSION=$(google-chrome --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
+        echo "CHROMEDRIVER_VERSION=$(curl --location --fail --retry 10 http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})" >> $GITHUB_ENV
     - uses: ./
       with:
-        chromedriver-version: '80.0.3987.106'
+        chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
     - name: setup
       run: |
         google-chrome --version
@@ -39,7 +42,7 @@ jobs:
   test_default_version:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v1
+    - uses: actions/checkout@v2
 
     - run: npm ci
     - run: npm run build
