@@ -21,7 +21,7 @@ async function run() {
     }
     await exec.exec(path.join(__dirname, "setup-chromedriver.sh"), [
       version,
-      arch
+      arch,
     ]);
   } catch (error) {
     core.setFailed(error.message);
