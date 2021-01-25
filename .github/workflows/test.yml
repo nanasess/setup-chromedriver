@@ -17,22 +17,29 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
     steps:
     - uses: actions/checkout@v2
-
+    - if: matrix.os == 'ubuntu-latest'
+      run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
+    - if: matrix.os == 'macos-latest'
+      run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
     - run: npm ci
     - run: npm run build
     - run: npm test
     - run: |
-        CHROME_VERSION=$(google-chrome --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
+        CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
         echo "CHROMEDRIVER_VERSION=$(curl --location --fail --retry 10 http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})" >> $GITHUB_ENV
     - uses: ./
       with:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
     - name: setup
       run: |
-        google-chrome --version
+        "$CHROMEAPP" --version
         sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
@@ -40,17 +47,24 @@ jobs:
         python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
 
   test_default_version:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, macos-latest ]
     steps:
     - uses: actions/checkout@v2
-
+    - if: matrix.os == 'ubuntu-latest'
+      run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
+    - if: matrix.os == 'macos-latest'
+      run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
     - run: npm ci
     - run: npm run build
     - run: npm test
     - uses: ./
     - name: setup
       run: |
-        google-chrome --version
+        "$CHROMEAPP" --version
         sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
