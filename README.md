@@ -7,6 +7,11 @@
 
 This action sets up a [ChromeDriver](https://chromedriver.chromium.org/) for use in actions
 
+## OS/Platform support
+
+- ubuntu-latest, ubuntu-20.04, ubuntu-18.04, or ubuntu-16.04
+- macos-latest, macos-10.15
+
 # Usage
 
 See [action.yml](action.yml)

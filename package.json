@@ -1,6 +1,6 @@
 {
   "name": "setup-chromedriver",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "private": true,
   "description": "setup-chromedriver",
   "main": "lib/setup-chromedriver.js",
