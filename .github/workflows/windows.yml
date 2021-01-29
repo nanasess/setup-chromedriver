@@ -1,0 +1,62 @@
+name: "Test chromedriver on Windows"
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+    paths:
+      - '**'
+      - '!*.md'
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '**'
+      - '!*.md'
+
+jobs:
+  test:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v2
+    - shell: pwsh
+      run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+    - run: npm ci
+    - run: npm run build
+    - run: npm test
+    - shell: pwsh
+      run: |
+        $chrome_fullversion = (Get-Item $Env:CHROMEAPP).VersionInfo.FileVersion
+        $chrome_majorversion = $chrome_fullversion.Split(".")[0]
+        $response = Invoke-WebRequest "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_$chrome_majorversion"
+        $version = $response.Content
+        echo "CHROMEDRIVER_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+    - uses: ./
+      with:
+        chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
+    - name: setup
+      run: |
+        pip3 install selenium
+        chromedriver --url-base=/wd/hub &
+        python "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.py"
+
+  test_default_version:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v2
+    - shell: pwsh
+      run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+    - run: npm ci
+    - run: npm run build
+    - run: npm test
+    - uses: ./
+    - name: setup
+      run: |
+        pip3 install selenium
+        chromedriver --url-base=/wd/hub &
+        python "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.py"
