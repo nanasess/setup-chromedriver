@@ -1,4 +1,4 @@
-name: "Test chromedriver"
+name: "Test chromedriver on *NIX"
 on:
   push:
     branches:
@@ -39,7 +39,6 @@ jobs:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
     - name: setup
       run: |
-        "$CHROMEAPP" --version
         sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &

@@ -19,10 +19,17 @@ async function run() {
       case "linux":
         arch = "linux64";
     }
-    await exec.exec(path.join(__dirname, "setup-chromedriver.sh"), [
-      version,
-      arch,
-    ]);
+    if (arch == "win32") {
+      await exec.exec(
+        "powershell -File " +
+          path.join(__dirname, "setup-chromedriver.ps1 " + version)
+      );
+    } else {
+      await exec.exec(path.join(__dirname, "setup-chromedriver.sh"), [
+        version,
+        arch,
+      ]);
+    }
   } catch (error) {
     core.setFailed(error.message);
   }
