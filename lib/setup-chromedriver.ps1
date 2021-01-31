@@ -4,8 +4,8 @@ Param(
 
 if([string]::IsNullOrEmpty($version))
 {
-    $chrome_fullversion = (Get-Item "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe").VersionInfo.FileVersion
-    $chrome_majorversion = $chrome_fullversion.Split[0]
+    $chrome_fullversion = (Get-Item "C:\Program Files\Google\Chrome\Application\chrome.exe").VersionInfo.FileVersion
+    $chrome_majorversion = $chrome_fullversion.Split(".")[0]
     $response = Invoke-WebRequest "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_$chrome_majorversion"
     $version = $response.Content
 }
