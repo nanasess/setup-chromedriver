@@ -11,22 +11,35 @@ This action sets up a [ChromeDriver](https://chromedriver.chromium.org/) for use
 
 - ubuntu-latest, ubuntu-20.04, ubuntu-18.04, or ubuntu-16.04
 - macos-latest, macos-10.15
+- windows-latest, windows-2019
 
 # Usage
 
 See [action.yml](action.yml)
 
+## for ubuntu-latest, macos-latest
+
 ``` yaml
 steps:
-- uses: actions/checkout@master
+- uses: actions/checkout@v2
 - uses: nanasess/setup-chromedriver@master
   with:
     # Optional: do not specify to match Chrome's version
-    chromedriver-version: '77.0.3865.40'
+    chromedriver-version: '88.0.4324.96'
 - run: |
     export DISPLAY=:99
     chromedriver --url-base=/wd/hub &
     sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # optional
  ```
 
+## for windows-latest
 
+``` yaml
+steps:
+- uses: actions/checkout@v2
+- uses: nanasess/setup-chromedriver@master
+  with:
+    # Optional: do not specify to match Chrome's version
+    chromedriver-version: '88.0.4324.96'
+- run: chromedriver --url-base=/wd/hub &
+ ```
