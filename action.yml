@@ -1,6 +1,10 @@
 name: 'setup-chromedriver'
 description: 'Setup chromedriver'
 author: 'nanasess'
+inputs:
+  chromedriver-version:
+    description: 'The chromedriver version to install'
+    required: false
 runs:
   using: 'node12'
   main: 'lib/setup-chromedriver.js'
