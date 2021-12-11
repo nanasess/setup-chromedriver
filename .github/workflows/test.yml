@@ -40,6 +40,9 @@ jobs:
     - name: setup
       run: |
         sudo pip3 install selenium
+        export DISPLAY=:99
+        chromedriver --url-base=/wd/hub &
+        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
 
   test_default_version:
@@ -62,46 +65,7 @@ jobs:
       run: |
         "$CHROMEAPP" --version
         sudo pip3 install selenium
-        python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
-  test_slim_image:
-    runs-on: ubuntu-latest
-    container:
-      image: debian:stable-slim
-    steps:
-    - run: |
-        apt-get update
-        apt-get install -y curl
-        curl -fsSL https://deb.nodesource.com/setup_17.x | bash -
-        curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | apt-key add -
-        curl -O https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-        apt install -y ./google-chrome-stable_current_amd64.deb
-        apt-get install -y nodejs python3-pip
-    - uses: actions/checkout@v2
-    - run: npm ci
-    - run: npm test
-    - run: |
-        CHROME_VERSION=$(google-chrome --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
-        echo "CHROMEDRIVER_VERSION=$(curl --location --fail --retry 10 http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})" >> $GITHUB_ENV
-    - uses: ./
-      with:
-        chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
-    - name: setup
-      run: |
-        pip3 install selenium
-        python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
-
-  test_slim_image_default_version:
-    runs-on: ubuntu-latest
-    container:
-      image: debian:stable-slim
-    steps:
-    - run: |
-        apt-get update
-        apt-get install -y python3-pip
-    - uses: actions/checkout@v2
-    - uses: ./
-    - name: setup
-      run: |
-        google-chrome --version
-        pip3 install selenium
+        export DISPLAY=:99
+        chromedriver --url-base=/wd/hub &
+        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
