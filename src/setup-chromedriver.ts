@@ -30,8 +30,12 @@ async function run() {
         arch,
       ]);
     }
-  } catch (error) {
-    core.setFailed(error.message);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      core.setFailed(error.message);
+    } else {
+      throw error;
+    }
   }
 }
 
