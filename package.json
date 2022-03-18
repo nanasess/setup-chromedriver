@@ -1,6 +1,6 @@
 {
   "name": "setup-chromedriver",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "setup-chromedriver",
   "main": "lib/setup-chromedriver.js",
@@ -22,7 +22,7 @@
   "author": "nanasess",
   "license": "GPL",
   "dependencies": {
-    "@actions/core": "^1.6.0",
+    "@actions/core": "1.5.0",
     "@actions/exec": "^1.1.1",
     "@actions/github": "^5.0.0",
     "@actions/io": "^1.1.2",
