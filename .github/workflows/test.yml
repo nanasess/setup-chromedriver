@@ -22,6 +22,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest ]
+        branch: [ 'master', 'now' ]
     steps:
     - uses: actions/checkout@v2
     - if: matrix.os == 'ubuntu-latest'
@@ -35,6 +36,11 @@ jobs:
         CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
         echo "CHROMEDRIVER_VERSION=$(curl --location --fail --retry 10 http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})" >> $GITHUB_ENV
     - uses: ./
+      if: matrix.branch == 'now'
+      with:
+        chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
+    - uses: nanasess/setup-chromedriver@master
+      if: matrix.branch == 'master'
       with:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
     - name: setup
@@ -51,6 +57,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, macos-latest ]
+        branch: [ 'master', 'now' ]
     steps:
     - uses: actions/checkout@v2
     - if: matrix.os == 'ubuntu-latest'
@@ -61,6 +68,9 @@ jobs:
     - run: yarn build
     - run: yarn test
     - uses: ./
+      if: matrix.branch == 'now'
+    - uses: nanasess/setup-chromedriver@master
+      if: matrix.branch == 'master'
     - name: setup
       run: |
         "$CHROMEAPP" --version
