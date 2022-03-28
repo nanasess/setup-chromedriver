@@ -45,11 +45,10 @@ jobs:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
     - name: setup
       run: |
-        sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
-        python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
+        yarn ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
 
   test_default_version:
     runs-on: ${{ matrix.os }}
@@ -74,8 +73,7 @@ jobs:
     - name: setup
       run: |
         "$CHROMEAPP" --version
-        sudo pip3 install selenium
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
-        python3 $GITHUB_WORKSPACE/__tests__/chromedriver.py
+        yarn ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
