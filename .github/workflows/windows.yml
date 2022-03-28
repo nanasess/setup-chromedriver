@@ -47,9 +47,8 @@ jobs:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
     - name: setup
       run: |
-        pip3 install selenium
         chromedriver --url-base=/wd/hub &
-        python "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.py"
+        yarn ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
 
   test_default_version:
     runs-on: windows-latest
@@ -71,6 +70,5 @@ jobs:
       if: matrix.branch == 'master'
     - name: setup
       run: |
-        pip3 install selenium
         chromedriver --url-base=/wd/hub &
-        python "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.py"
+        yarn ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
