@@ -23,7 +23,7 @@ jobs:
       matrix:
         branch: [ 'master', 'now' ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - run: rm -rf node_modules && yarn install --frozen-lockfile
@@ -57,7 +57,7 @@ jobs:
       matrix:
         branch: [ 'master', 'now' ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - run: rm -rf node_modules && yarn install --frozen-lockfile

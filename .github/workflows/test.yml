@@ -24,7 +24,7 @@ jobs:
         os: [ ubuntu-latest, macos-latest ]
         branch: [ 'master', 'now' ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - if: matrix.os == 'ubuntu-latest'
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: matrix.os == 'macos-latest'
@@ -58,7 +58,7 @@ jobs:
         os: [ ubuntu-latest, macos-latest ]
         branch: [ 'master', 'now' ]
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - if: matrix.os == 'ubuntu-latest'
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: matrix.os == 'macos-latest'
