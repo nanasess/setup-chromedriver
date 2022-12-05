@@ -32,7 +32,7 @@
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
-    "@types/node": "^18.11.9",
+    "@types/node": "^18.11.11",
     "@types/selenium-webdriver": "^4.1.9",
     "@types/semver": "^7.3.13",
     "husky": "^8.0.2",
