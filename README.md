@@ -1,17 +1,16 @@
 # setup-chromedriver
 
-<p align="left">
-  <a href="https://github.com/nanasess/setup-chromedriver"><img alt="GitHub Actions status" src="https://github.com/nanasess/setup-chromedriver/workflows/Test%20chromedriver/badge.svg"></a>
-  <a href="https://github.com/nanasess/setup-chromedriver/blob/master/LICENSE"><img alt="LICENSE" src="https://img.shields.io/badge/license-MIT-428f7e.svg"></a>
-</p>
+[![Test chromedriver on *NIX](https://github.com/nanasess/setup-chromedriver/actions/workflows/test.yml/badge.svg)](https://github.com/nanasess/setup-chromedriver/actions/workflows/test.yml)
+[![Test chromedriver on Windows](https://github.com/nanasess/setup-chromedriver/actions/workflows/windows.yml/badge.svg)](https://github.com/nanasess/setup-chromedriver/actions/workflows/windows.yml)
+![GitHub](https://img.shields.io/github/license/nanasess/setup-chromedriver)
 
 This action sets up a [ChromeDriver](https://chromedriver.chromium.org/) for use in actions
 
 ## OS/Platform support
 
-- ubuntu-latest, ubuntu-20.04 or ubuntu-18.04
-- macos-latest, macos-10.15
-- windows-latest, windows-2019
+- ubuntu-latest, ubuntu-22.04 and ubuntu-20.04
+- macos-latest, macos-12 and macos-11
+- windows-latest, windows-2022 and windows-2019
 
 # Usage
 
