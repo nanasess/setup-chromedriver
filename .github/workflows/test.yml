@@ -21,13 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
         branch: [ 'master', 'now' ]
     steps:
     - uses: actions/checkout@v3
-    - if: matrix.os == 'ubuntu-latest'
+    - if: startsWith(matrix.os, 'ubuntu')
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
-    - if: matrix.os == 'macos-latest'
+    - if: startsWith(matrix.os, 'macos')
       run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
     - run: rm -rf node_modules && yarn install --frozen-lockfile
     - run: yarn build
@@ -55,13 +55,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, macos-latest ]
+        os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
         branch: [ 'master', 'now' ]
     steps:
     - uses: actions/checkout@v3
-    - if: matrix.os == 'ubuntu-latest'
+    - if: startsWith(matrix.os, 'ubuntu')
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
-    - if: matrix.os == 'macos-latest'
+    - if: startsWith(matrix.os, 'macos')
       run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
     - run: rm -rf node_modules && yarn install --frozen-lockfile
     - run: yarn build
