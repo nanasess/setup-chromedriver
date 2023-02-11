@@ -2,8 +2,8 @@
 
 [![Test chromedriver on *NIX](https://github.com/nanasess/setup-chromedriver/actions/workflows/test.yml/badge.svg)](https://github.com/nanasess/setup-chromedriver/actions/workflows/test.yml)
 [![Test chromedriver on Windows](https://github.com/nanasess/setup-chromedriver/actions/workflows/windows.yml/badge.svg)](https://github.com/nanasess/setup-chromedriver/actions/workflows/windows.yml)
-![GitHub](https://img.shields.io/github/license/nanasess/setup-chromedriver)
-![GitHub Sponsors](https://img.shields.io/github/sponsors/nanasess)
+[![GitHub](https://img.shields.io/github/license/nanasess/setup-chromedriver)](./LICENSE)
+[![GitHub Sponsors](https://img.shields.io/github/sponsors/nanasess)](https://github.com/sponsors/nanasess)
 
 This action sets up a [ChromeDriver](https://chromedriver.chromium.org/) for use in actions
 
