@@ -17,10 +17,11 @@ on:
 
 jobs:
   test:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ windows-latest, windows-2019 ]
         branch: [ 'master', 'now' ]
     steps:
     - uses: actions/checkout@v3
@@ -51,10 +52,11 @@ jobs:
         yarn ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
 
   test_default_version:
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        os: [ windows-latest, windows-2019 ]
         branch: [ 'master', 'now' ]
     steps:
     - uses: actions/checkout@v3
