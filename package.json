@@ -3,9 +3,10 @@
   "version": "1.0.8",
   "private": true,
   "description": "setup-chromedriver",
-  "main": "lib/setup-chromedriver.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
+    "package": "ncc build --source-map --license licenses.txt",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "test": "jest"
@@ -35,6 +36,8 @@
     "@types/node": "^18.15.3",
     "@types/selenium-webdriver": "^4.1.13",
     "@types/semver": "^7.3.13",
+    "@types/yauzl": "^2.10.0",
+    "@vercel/ncc": "^0.36.1",
     "husky": "^8.0.3",
     "jest": "^27.5.1",
     "jest-circus": "^29.5.0",
