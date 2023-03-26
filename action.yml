@@ -7,5 +7,5 @@ inputs:
     required: false
 runs:
   using: 'node16'
-  main: 'lib/setup-chromedriver.js'
+  main: 'dist/index.js'
 
