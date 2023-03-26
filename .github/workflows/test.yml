@@ -29,8 +29,9 @@ jobs:
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
       run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
-    - run: rm -rf node_modules && yarn install --frozen-lockfile
+    - run: yarn install --frozen-lockfile
     - run: yarn build
+    - run: yarn package
     - run: yarn test
     - run: |
         CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
@@ -63,8 +64,9 @@ jobs:
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
       run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
-    - run: rm -rf node_modules && yarn install --frozen-lockfile
+    - run: yarn install --frozen-lockfile
     - run: yarn build
+    - run: yarn package
     - run: yarn test
     - uses: ./
       if: matrix.branch == 'now'
