@@ -28,10 +28,14 @@ jobs:
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - run: yarn install --frozen-lockfile
-      shell: bash
     - run: yarn build
     - run: yarn package
     - run: yarn test
+    - run: |
+        node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
+        node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
+        rm -rf node_modules
+      shell: bash
     - shell: pwsh
       run: |
         $chrome_fullversion = (Get-Item $Env:CHROMEAPP).VersionInfo.FileVersion
@@ -50,7 +54,7 @@ jobs:
     - name: setup
       run: |
         chromedriver --url-base=/wd/hub &
-        yarn ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
+        node "$Env:GITHUB_WORKSPACE\__tests__\index.js"
 
   test_default_version:
     runs-on: ${{ matrix.os }}
@@ -64,10 +68,14 @@ jobs:
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - run: yarn install --frozen-lockfile
-      shell: bash
     - run: yarn build
     - run: yarn package
     - run: yarn test
+    - run: |
+        node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
+        node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
+        rm -rf node_modules
+      shell: bash
     - uses: ./
       if: matrix.branch == 'now'
     - uses: nanasess/setup-chromedriver@master
@@ -75,4 +83,4 @@ jobs:
     - name: setup
       run: |
         chromedriver --url-base=/wd/hub &
-        yarn ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
+        node "$Env:GITHUB_WORKSPACE\__tests__\index.js"
