@@ -33,7 +33,8 @@ jobs:
     - run: yarn build
     - run: yarn package
     - run: yarn test
-    - run: |
+    - if: startsWith(matrix.os, 'ubuntu')
+      run: |
         node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
         node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
         rm -rf node_modules
@@ -53,7 +54,12 @@ jobs:
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
-        node $GITHUB_WORKSPACE/__tests__/index.js
+    - name: Run chromedriver tests
+      if: startsWith(matrix.os, 'ubuntu')
+      run: node $GITHUB_WORKSPACE/__tests__/index.js
+    - name: Run chromedriver tests
+      if: startsWith(matrix.os, 'macos')
+      run: yarn ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
 
   test_default_version:
     runs-on: ${{ matrix.os }}
@@ -72,7 +78,8 @@ jobs:
     - run: yarn build
     - run: yarn package
     - run: yarn test
-    - run: |
+    - if: startsWith(matrix.os, 'ubuntu')
+      run: |
         node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
         node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
         rm -rf node_modules
@@ -86,4 +93,9 @@ jobs:
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
-        node $GITHUB_WORKSPACE/__tests__/index.js
+    - name: Run chromedriver tests
+      if: startsWith(matrix.os, 'ubuntu')
+      run: node $GITHUB_WORKSPACE/__tests__/index.js
+    - name: Run chromedriver tests
+      if: startsWith(matrix.os, 'macos')
+      run: yarn ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
