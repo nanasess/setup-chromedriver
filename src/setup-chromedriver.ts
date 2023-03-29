@@ -22,10 +22,10 @@ async function run() {
     if (arch == "win32") {
       await exec.exec(
         "powershell -File " +
-          path.join(__dirname, "setup-chromedriver.ps1 " + version)
+          path.join(__dirname, "../lib", "setup-chromedriver.ps1 " + version)
       );
     } else {
-      await exec.exec(path.join(__dirname, "setup-chromedriver.sh"), [
+      await exec.exec(path.join(__dirname, "../lib", "setup-chromedriver.sh"), [
         version,
         arch,
       ]);
