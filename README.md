@@ -22,7 +22,7 @@ See [action.yml](action.yml)
 ``` yaml
 steps:
 - uses: actions/checkout@v2
-- uses: nanasess/setup-chromedriver@v1
+- uses: nanasess/setup-chromedriver@v2
   with:
     # Optional: do not specify to match Chrome's version
     chromedriver-version: '88.0.4324.96'
@@ -37,7 +37,7 @@ steps:
 ``` yaml
 steps:
 - uses: actions/checkout@v2
-- uses: nanasess/setup-chromedriver@v1
+- uses: nanasess/setup-chromedriver@v2
   with:
     # Optional: do not specify to match Chrome's version
     chromedriver-version: '88.0.4324.96'
