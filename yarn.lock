@@ -3186,10 +3186,10 @@ saxes@^5.0.1:
   dependencies:
     xmlchars "^2.2.0"
 
-selenium-webdriver@^4.9.0:
-  version "4.9.0"
-  resolved "https://registry.yarnpkg.com/selenium-webdriver/-/selenium-webdriver-4.9.0.tgz#21a33a2ac547c5b79785e93c2d566da8f4461121"
-  integrity sha512-QGaPoREo7sgOVhTiAvCasoi1f4ruTaJDtp0RKNFIbfyns5smK5+iCwnRTIPXb0R3CAYdaqUXd6BHduh37DorzQ==
+selenium-webdriver@^4.9.1:
+  version "4.9.1"
+  resolved "https://registry.yarnpkg.com/selenium-webdriver/-/selenium-webdriver-4.9.1.tgz#24c4055258b8be50792186fe52b60cd00f768481"
+  integrity sha512-6OBMaSXwn3/vzQJkfYpAjGaYAA+otsE7zu0omz74HQ9XBuAMUImdVS6hKXlB2G3Bt9WIuVfK0F4V8oye8JRc3Q==
   dependencies:
     jszip "^3.10.1"
     tmp "^0.2.1"
