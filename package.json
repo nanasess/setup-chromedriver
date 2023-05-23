@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
-    "@types/node": "^18.16.0",
+    "@types/node": "^20.2.3",
     "@types/selenium-webdriver": "^4.1.14",
     "@types/semver": "^7.3.13",
     "@types/yauzl": "^2.10.0",
