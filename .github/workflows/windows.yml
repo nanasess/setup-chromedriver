@@ -40,9 +40,16 @@ jobs:
       run: |
         $chrome_fullversion = (Get-Item $Env:CHROMEAPP).VersionInfo.FileVersion
         $chrome_majorversion = $chrome_fullversion.Split(".")[0]
-        $response = Invoke-WebRequest "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_$chrome_majorversion"
-        $version = $response.Content
-        echo "CHROMEDRIVER_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+        if($chrome_majorversion -lt 115)
+        {
+            $response = Invoke-WebRequest "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_$chrome_majorversion"
+            $version = $response.Content
+            echo "CHROMEDRIVER_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+        }
+        else
+        {
+            echo "CHROMEDRIVER_VERSION=$chrome_fullversion" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+        }
     - uses: ./
       if: matrix.branch == 'now'
       with:

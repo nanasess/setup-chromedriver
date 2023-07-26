@@ -22,7 +22,12 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
-        branch: [ 'master', 'now' ]
+        branch:
+          # - 'master'
+          - 'now'
+        chrome_version:
+          - 'current'
+          - '114.0.5735.90'
     steps:
     - uses: actions/checkout@v3
     - if: startsWith(matrix.os, 'ubuntu')
@@ -37,9 +42,22 @@ jobs:
         node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
         node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
         rm -rf node_modules
-    - run: |
-        CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ' | cut -d '.' -f 1)
+    - if: matrix.chrome_version != 'current'
+      env:
+        CHROME_VERSION: ${{ matrix.chrome_version }}
+      run: |
+        CHROME_VERSION=$(echo $CHROME_VERSION | cut -d '.' -f 1)
         echo "CHROMEDRIVER_VERSION=$(curl --location --fail --retry 10 http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${CHROME_VERSION})" >> $GITHUB_ENV
+    - if: matrix.chrome_version == 'current' && startsWith(matrix.os, 'ubuntu')
+      run: |
+        CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ')
+        echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
+    - if: matrix.chrome_version == 'current' && startsWith(matrix.os, 'maos')
+      env:
+        CHROME_VERSION: '114.0.5735.90'
+      run: |
+        CHROME_VERSION=$(echo $CHROME_VERSION | cut -d '.' -f 1)
+        echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
     - uses: ./
       if: matrix.branch == 'now'
       with:
@@ -61,7 +79,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
-        branch: [ 'master', 'now' ]
+        branch:
+          # - 'master'
+          - 'now'
     steps:
     - uses: actions/checkout@v3
     - if: startsWith(matrix.os, 'ubuntu')
