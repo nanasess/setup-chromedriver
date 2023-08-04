@@ -23,7 +23,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
         branch:
-          - 'master'
+          # - 'master'
           - 'now'
         chrome_version:
           - 'current'
@@ -80,7 +80,7 @@ jobs:
       matrix:
         os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
         branch:
-          - 'master'
+          # - 'master'
           - 'now'
     steps:
     - uses: actions/checkout@v3
