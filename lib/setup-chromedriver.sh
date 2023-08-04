@@ -62,6 +62,12 @@ else
 
     echo "Installing ChromeDriver $VERSION for $ARCH"
     URL=$(curl  --location --fail --retry 10 https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json | jq -r ".versions[] | select(.version == \"${VERSION}\") | .downloads.chromedriver[] | select(.platform == \"${ARCH}\") | .url")
+    if [ "$URL" == "" ]; then
+        echo "Fallback to latest version of ChromeDriver for $ARCH"
+        VERSION=$(curl  --location --fail --retry 10 https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json | jq -r ".versions[] | select(.version | startswith(\"$(echo $VERSION | cut -d '.' -f1-3).\")) | .version" | tail -1)
+        URL=$(curl  --location --fail --retry 10 https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json | jq -r ".versions[] | select(.version == \"${VERSION}\") | .downloads.chromedriver[] | select(.platform == \"${ARCH}\") | .url")
+        echo "Installing ChromeDriver $VERSION for $ARCH"
+    fi
     echo "Downloading $URL"
     curl --location --fail --retry 10 -O "$URL"
     unzip -o -q chromedriver-${ARCH}.zip

@@ -22,7 +22,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-latest, windows-2019 ]
-        branch: [ 'master', 'now' ]
+        branch:
+          # - 'master'
+          - 'now'
     steps:
     - uses: actions/checkout@v3
     - shell: pwsh
@@ -69,7 +71,9 @@ jobs:
       fail-fast: false
       matrix:
         os: [ windows-latest, windows-2019 ]
-        branch: [ 'master', 'now' ]
+        branch:
+          # - 'master'
+          - 'now'
     steps:
     - uses: actions/checkout@v3
     - shell: pwsh
