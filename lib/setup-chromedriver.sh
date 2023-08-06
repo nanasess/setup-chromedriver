@@ -20,7 +20,7 @@ if [[ "${ARCH}" =~ ^linux64 ]]; then
     apps=()
     test -z "${sudo}" && apps+=(sudo)
     type -a curl > /dev/null 2>&1 || apps+=(curl)
-    type -a "${APP}" > /dev/null 2>&1 || apps+=("${APP}")
+    type -a "${CHROMEAPP}" > /dev/null 2>&1 || apps+=("${APP}")
     type -a jq > /dev/null 2>&1 || apps+=(jq)
     type -a unzip > /dev/null 2>&1 || apps+=(unzip)
     if (("${#apps[@]}")); then
