@@ -41,7 +41,7 @@ if (!$url)
     Write-Output "Falling back to latest version of ChromeDriver for $arch"
     $version3 = $version.Substring(0, $version.LastIndexOf('.'))
     Write-Output "VERSION3 = $version3"
-    $version = $json | ConvertFrom-Json | Select-Object -ExpandProperty versions | Where-Object { $_.version -like "$version3.*" } | Select-Object -Last 1 -ExpandProperty version
+    $version = $json | Select-Object -ExpandProperty versions | Where-Object { $_.version -like "$version3.*" } | Select-Object -Last 1 -ExpandProperty version
     Write-Output "VERSION = $version"
     $url = $json | Select-Object -ExpandProperty versions | Where-Object { $_.version -eq $version } | Select-Object -ExpandProperty downloads | Select-Object -ExpandProperty chromedriver | Where-Object { $_.platform -eq $arch } | Select-Object -ExpandProperty url
 }
