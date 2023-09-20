@@ -27,9 +27,10 @@ jobs:
           - 'now'
         chrome_version:
           - 'current'
-          - '114.0.5735.90'
+          # FIXME https://github.com/nanasess/setup-chromedriver/issues/229
+          # - '114.0.5735.90'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - if: startsWith(matrix.os, 'ubuntu')
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
@@ -83,7 +84,7 @@ jobs:
           # - 'master'
           - 'now'
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - if: startsWith(matrix.os, 'ubuntu')
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
