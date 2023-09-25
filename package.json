@@ -36,7 +36,7 @@
     "@types/node": "^20.5.1",
     "@types/selenium-webdriver": "^4.1.16",
     "@types/semver": "^7.5.1",
-    "@types/yauzl": "^2.10.0",
+    "@types/yauzl": "^2.10.1",
     "@vercel/ncc": "^0.36.1",
     "husky": "^8.0.3",
     "jest": "^27.5.1",
