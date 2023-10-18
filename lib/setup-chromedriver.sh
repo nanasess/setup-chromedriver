@@ -88,5 +88,10 @@ echo "Installing ChromeDriver ${VERSION} for ${ARCH}"
 echo "Downloading ${URL}..."
 ${CURL} -o chromedriver.zip "${URL}"
 unzip -o -q chromedriver.zip
+echo Installing chromedriver to /usr/local/bin
 ${sudo} mv "chromedriver-${ARCH}/chromedriver" /usr/local/bin/chromedriver
 rm -fr chromedriver.zip chromedriver-*
+echo Chrome version:
+${CHROMEAPP} --version
+echo Chromedriver version:
+/usr/local/bin/chromedriver --version
