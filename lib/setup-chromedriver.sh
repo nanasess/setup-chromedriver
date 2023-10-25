@@ -91,7 +91,7 @@ unzip -o -q chromedriver.zip
 echo Installing chromedriver to /usr/local/bin
 ${sudo} mv "chromedriver-${ARCH}/chromedriver" /usr/local/bin/chromedriver
 rm -fr chromedriver.zip chromedriver-*
-if [[ -x "${CHROMEAPP}" ]]; then
+if command -v "${CHROMEAPP}" >/dev/null; then
     echo Chrome version:
     "${CHROMEAPP}" --version
 fi
