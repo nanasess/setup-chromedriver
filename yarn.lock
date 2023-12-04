@@ -1185,10 +1185,10 @@
   resolved "https://registry.yarnpkg.com/@types/prettier/-/prettier-2.4.4.tgz#5d9b63132df54d8909fce1c3f8ca260fdd693e17"
   integrity sha512-ReVR2rLTV1kvtlWFyuot+d1pkpG2Fw/XKE3PDAdj57rbM97ttSp9JZ2UsP+2EHTylra9cUf6JA7tGwW1INzUrA==
 
-"@types/selenium-webdriver@^4.1.19":
-  version "4.1.19"
-  resolved "https://registry.yarnpkg.com/@types/selenium-webdriver/-/selenium-webdriver-4.1.19.tgz#3a312368e00e263ab44dd2a12a832521b6f62837"
-  integrity sha512-9/vdyC3KeFQ7/vtt0H5RR0fnlrtc4dF9ssRBnh+yerua9O2Sst4nuPL4eHyKlR1/ZVV/5XPMLaJuVgv+7CDCAw==
+"@types/selenium-webdriver@^4.1.20":
+  version "4.1.20"
+  resolved "https://registry.yarnpkg.com/@types/selenium-webdriver/-/selenium-webdriver-4.1.20.tgz#00d10f0593c18fe72fabc55b8f62fa387a31a193"
+  integrity sha512-WxzARWDZVTbXlJgwYGhNoiV4OuHDabctSQmK5V88LqjW9TJiLETcknxRZ2xB1toecQnu0T2jt1pPXnSYkaWYiw==
   dependencies:
     "@types/ws" "*"
 
