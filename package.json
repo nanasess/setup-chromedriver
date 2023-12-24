@@ -34,7 +34,7 @@
   "devDependencies": {
     "@types/jest": "^27.4.1",
     "@types/node": "^20.10.0",
-    "@types/selenium-webdriver": "^4.1.19",
+    "@types/selenium-webdriver": "^4.1.21",
     "@types/semver": "^7.5.4",
     "@types/yauzl": "^2.10.3",
     "@vercel/ncc": "^0.38.1",
@@ -42,7 +42,7 @@
     "jest": "^27.5.1",
     "jest-circus": "^29.7.0",
     "prettier": "^3.1.0",
-    "selenium-webdriver": "^4.15.0",
+    "selenium-webdriver": "^4.16.0",
     "ts-jest": "^27.1.3",
     "ts-node": "^10.9.1",
     "typescript": "^4.9.5"
