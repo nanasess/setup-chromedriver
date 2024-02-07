@@ -6,6 +6,6 @@ inputs:
     description: 'The chromedriver version to install'
     required: false
 runs:
-  using: 'node16'
+  using: 'node20'
   main: 'dist/index.js'
 
