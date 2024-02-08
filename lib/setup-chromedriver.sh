@@ -15,7 +15,7 @@ if [[ "${ARCH}" =~ ^linux64 ]]; then
     APP="${CHROMEAPP}"
     if command -v dpkg &>/dev/null; then
         if ! dpkg -s "${APP}" >/dev/null; then
-            ${sudo} apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A040830F7FAC5991
+            ${sudo} apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4EB27DB2A3B88B8B
             echo "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" | ${sudo} tee /etc/apt/sources.list.d/google.list >/dev/null
             APP=google-chrome-stable
         fi
