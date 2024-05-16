@@ -7,6 +7,7 @@ async function run() {
     console.log(`##setup chromedriver`);
     const version = core.getInput("chromedriver-version", { required: false });
     const plat = process.platform;
+    core.addPath('/usr/local/bin');
     let arch = "linux";
     switch (plat) {
       case "win32":
