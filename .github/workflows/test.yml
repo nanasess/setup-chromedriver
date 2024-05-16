@@ -70,7 +70,8 @@ jobs:
     - name: setup
       run: |
         export DISPLAY=:99
-        chromedriver --url-base=/wd/hub &
+        echo $PATH
+        chromedriver --verbose --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         node $GITHUB_WORKSPACE/__tests__/index.js
 
