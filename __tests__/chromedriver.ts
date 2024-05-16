@@ -1,5 +1,7 @@
-import { Builder, Capabilities, until, By, Key } from 'selenium-webdriver';
+import { Builder, Capabilities, until, By, Key, logging } from 'selenium-webdriver';
 (async () => {
+  const logger = logging.getLogger('selenium');
+  logger.setLevel(logging.Level.DEBUG);
   const timeout = 30000;
   const driver = new Builder()
     .withCapabilities(Capabilities.chrome())
