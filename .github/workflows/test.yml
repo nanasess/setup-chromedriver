@@ -41,8 +41,10 @@ jobs:
     - run: yarn test
     - run: |
         node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
-        node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
-        rm -rf node_modules
+        # Cannot find chromedriver when using ncc.
+        # see https://github.com/nanasess/setup-chromedriver/issues/303
+        # node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
+        # rm -rf node_modules
     - if: matrix.chrome_version != 'current'
       env:
         CHROME_VERSION: ${{ matrix.chrome_version }}
@@ -72,7 +74,7 @@ jobs:
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
-        node $GITHUB_WORKSPACE/__tests__/index.js
+        node $GITHUB_WORKSPACE/__tests__/chromedriver.js
 
   test_default_version:
     runs-on: ${{ matrix.os }}
@@ -95,8 +97,10 @@ jobs:
     - run: yarn test
     - run: |
         node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
-        node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
-        rm -rf node_modules
+        # Cannot find chromedriver when using ncc.
+        # see https://github.com/nanasess/setup-chromedriver/issues/303
+        # node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
+        # rm -rf node_modules
     - uses: ./
       if: matrix.branch == 'now'
     - uses: nanasess/setup-chromedriver@master
@@ -107,4 +111,4 @@ jobs:
         export DISPLAY=:99
         chromedriver --url-base=/wd/hub &
         sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
-        node $GITHUB_WORKSPACE/__tests__/index.js
+        node $GITHUB_WORKSPACE/__tests__/chromedriver.js
