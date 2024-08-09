@@ -43,10 +43,10 @@ jobs:
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
       run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
-    - run: yarn install --frozen-lockfile
-    - run: yarn build
-    - run: yarn package
-    - run: yarn test
+    - run: pnpm install --frozen-lockfile
+    - run: pnpm build
+    - run: pnpm package
+    - run: pnpm test
     # - run: |
     #     node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
     #     # Cannot find chromedriver when using ncc.
@@ -107,10 +107,10 @@ jobs:
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
       run: echo 'CHROMEAPP=/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' >> $GITHUB_ENV
-    - run: yarn install --frozen-lockfile
-    - run: yarn build
-    - run: yarn package
-    - run: yarn test
+    - run: pnpm install --frozen-lockfile
+    - run: pnpm build
+    - run: pnpm package
+    - run: pnpm test
     # - run: |
     #     node_modules/.bin/tsc $GITHUB_WORKSPACE/__tests__/chromedriver.ts
     #     # Cannot find chromedriver when using ncc.
