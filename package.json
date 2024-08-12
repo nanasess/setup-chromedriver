@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@types/jest": "^27.4.1",
-    "@types/node": "^22.0.0",
+    "@types/node": "^22.2.0",
     "@types/selenium-webdriver": "^4.1.24",
     "@types/semver": "^7.5.8",
     "@types/yauzl": "^2.10.3",
@@ -53,5 +53,6 @@
       "pre-commit": "npm run build && npm run format",
       "post-commit": "npm prune --production && git add node_modules/* && git commit -m \"Husky commit correct node modules\""
     }
-  }
+  },
+  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
 }
