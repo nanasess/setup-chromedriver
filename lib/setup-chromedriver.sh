@@ -12,7 +12,7 @@ CHROMEAPP="${3:-}"
 sudo=$(command -v sudo)
 
 if [[ "${ARCH}" =~ ^linux64 ]]; then
-    if [[ -n "${CHROMEAPP}" ]]; then
+    if [[ -z "${CHROMEAPP}" ]]; then
         CHROMEAPP=google-chrome
     fi
     APP="${CHROMEAPP}"
@@ -37,7 +37,7 @@ if [[ "${ARCH}" =~ ^linux64 ]]; then
     fi
 fi
 
-if [[ "${ARCH}" =~ ^mac64 && -n "${CHROMEAPP}" ]]; then
+if [[ "${ARCH}" =~ ^mac64 && -z "${CHROMEAPP}" ]]; then
     CHROMEAPP="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 fi
 
