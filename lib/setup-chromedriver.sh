@@ -13,7 +13,7 @@ sudo=$(command -v sudo)
 
 if [[ "${ARCH}" =~ ^linux64 ]]; then
     if [[ -z "${CHROMEAPP}" ]]; then
-        CHROMEAPP=google-chrome
+        CHROMEAPP=google-chrome-stable
     fi
     APP="${CHROMEAPP}"
     if command -v dpkg &>/dev/null; then
