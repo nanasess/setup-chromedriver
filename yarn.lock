@@ -3263,10 +3263,10 @@ type-fest@^0.21.3:
   resolved "https://registry.yarnpkg.com/type-fest/-/type-fest-0.21.3.tgz#d260a24b0198436e133fa26a524a6d65fa3b2e37"
   integrity sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==
 
-typed-rest-client@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.yarnpkg.com/typed-rest-client/-/typed-rest-client-2.0.2.tgz#82d451b9a219bf8fa688b698b2581327be4b920d"
-  integrity sha512-rmAQM2gZw/PQpK5+5aSs+I6ZBv4PFC2BT1o+0ADS1SgSejA+14EmbI2Lt8uXwkX7oeOMkwFmg0pHKwe8D9IT5A==
+typed-rest-client@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.yarnpkg.com/typed-rest-client/-/typed-rest-client-2.1.0.tgz#f04c6cfcabc6012c2d036b806eaac455604f1598"
+  integrity sha512-Nel9aPbgSzRxfs1+4GoSB4wexCF+4Axlk7OSGVQCMa+4fWcyxIsN/YNmkp0xTT2iQzMD98h8yFLav/cNaULmRA==
   dependencies:
     des.js "^1.1.0"
     js-md4 "^0.3.2"
