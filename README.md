@@ -26,6 +26,8 @@ steps:
   with:
     # Optional: do not specify to match Chrome's version
     chromedriver-version: '88.0.4324.96'
+    # Optional: if your chrome binary name is different
+    chromeapp: chrome
 - run: |
     export DISPLAY=:99
     chromedriver --url-base=/wd/hub &

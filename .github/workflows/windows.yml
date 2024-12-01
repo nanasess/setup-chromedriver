@@ -58,10 +58,12 @@ jobs:
       if: matrix.branch == 'now'
       with:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
+        chromeapp: ${{ env.CHROMEAPP }}
     - uses: nanasess/setup-chromedriver@master
       if: matrix.branch == 'master'
       with:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
+        chromeapp: ${{ env.CHROMEAPP }}
     - name: setup
       run: |
         chromedriver --url-base=/wd/hub &
