@@ -1,11 +1,13 @@
-name: 'setup-chromedriver'
-description: 'Setup chromedriver'
-author: 'nanasess'
+name: "setup-chromedriver"
+description: "Setup chromedriver"
+author: "nanasess"
 inputs:
   chromedriver-version:
-    description: 'The chromedriver version to install'
+    description: "The chromedriver version to install"
+    required: false
+  chromeapp:
+    description: "Custom chrome binary name (for Linux or MacOS)"
     required: false
 runs:
-  using: 'node20'
-  main: 'dist/index.js'
-
+  using: "node20"
+  main: "dist/index.js"
