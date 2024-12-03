@@ -1,9 +1,15 @@
 Param(
-    [string]$version
+    [string]$version,
+    [string]$chromeapp
 )
 
+if([string]::IsNullOrEmpty($chromeapp))
+{
+    $chromeapp = "C:\Program Files\Google\Chrome\Application\chrome.exe"
+}
+
 $json_url = "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json"
-$chrome_fullversion = (Get-Item "C:\Program Files\Google\Chrome\Application\chrome.exe").VersionInfo.FileVersion
+$chrome_fullversion = (Get-Item $chromeapp).VersionInfo.FileVersion
 
 Write-Output "Chrome version: $chrome_fullversion"
 if([string]::IsNullOrEmpty($version))

@@ -7,11 +7,14 @@ JSON_URL=https://googlechromelabs.github.io/chrome-for-testing/known-good-versio
 
 VERSION="${1:-}"
 ARCH="${2:-linux64}"
+CHROMEAPP="${3:-}"
 
 sudo=$(command -v sudo)
 
 if [[ "${ARCH}" =~ ^linux64 ]]; then
-    CHROMEAPP=google-chrome
+    if [[ -z "${CHROMEAPP}" ]]; then
+        CHROMEAPP=google-chrome-stable
+    fi
     APP="${CHROMEAPP}"
     if command -v dpkg &>/dev/null; then
         if ! dpkg -s "${APP}" >/dev/null; then
@@ -34,7 +37,7 @@ if [[ "${ARCH}" =~ ^linux64 ]]; then
     fi
 fi
 
-if [[ "${ARCH}" =~ ^mac64 ]]; then
+if [[ "${ARCH}" =~ ^mac64 && -z "${CHROMEAPP}" ]]; then
     CHROMEAPP="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 fi
 
