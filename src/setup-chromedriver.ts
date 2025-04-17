@@ -14,7 +14,9 @@ async function run() {
   try {
     console.log('##setup chromedriver');
     const versionInput = core.getInput('chromedriver-version', { required: false });
-    const chromeapp = core.getInput('chromeapp', { required: false });
+    // prefer action input, fallback to CHROMEAPP environment variable for workflow overrides
+    const chromeAppInput = core.getInput('chromeapp', { required: false });
+    const chromeapp = chromeAppInput || process.env.CHROMEAPP;
     const url = await getDownloadUrl(versionInput, chromeapp);
     await downloadAndInstall(url);
   } catch (error: unknown) {
@@ -37,14 +39,35 @@ async function getDownloadUrl(versionInput: string | undefined, chromeapp: strin
     default: arch = 'linux64';
   }
 
-  // determine Chrome version
-  const chromeCmd = chromeapp || (plat === 'darwin'
-    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-    : plat === 'win32'
-      ? 'chrome'
-      : 'google-chrome-stable');
-  // invoke executable and arguments separately to handle spaces in path
-  const result = await exec.getExecOutput(chromeCmd, ['--version']);
+  // determine the Chrome executable path, preferring input or env var, fallback to common defaults
+  let chromeCmd = chromeapp;
+  if (!chromeCmd) {
+    if (plat === 'darwin') {
+      chromeCmd = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+    } else if (plat === 'win32') {
+      // check PROGRAMFILES(x86) and PROGRAMFILES for installed Chrome
+      const pf86 = process.env['PROGRAMFILES(X86)'] || process.env['ProgramFiles(x86)'];
+      const pf = process.env['PROGRAMFILES'] || process.env['ProgramFiles'];
+      const p86Path = pf86 ? path.join(pf86, 'Google', 'Chrome', 'Application', 'chrome.exe') : '';
+      const pPath = pf ? path.join(pf, 'Google', 'Chrome', 'Application', 'chrome.exe') : '';
+      if (p86Path && fs.existsSync(p86Path)) chromeCmd = p86Path;
+      else if (pPath && fs.existsSync(pPath)) chromeCmd = pPath;
+      else chromeCmd = 'chrome';
+    } else {
+      chromeCmd = 'google-chrome-stable';
+    }
+  }
+
+  // determine Chrome version, handling spaces in path on each platform
+  let result;
+  if (plat === 'win32') {
+    // use cmd.exe on Windows with verbatim arguments to preserve spaces
+    result = await exec.getExecOutput('cmd', ['/C', chromeCmd, '--version'], { windowsVerbatimArguments: true });
+  } else {
+    // use bash on *nix to run full path in shell, quoting if necessary
+    const cmdStr = chromeCmd.includes(' ') ? `"${chromeCmd}" --version` : `${chromeCmd} --version`;
+    result = await exec.getExecOutput('/bin/bash', ['-lc', cmdStr]);
+  }
   const chromeVersion = result.stdout.trim().split(' ')[2];
   const chromeMajor = parseInt(chromeVersion.split('.')[0], 10);
 
