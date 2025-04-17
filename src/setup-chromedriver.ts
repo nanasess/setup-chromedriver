@@ -43,7 +43,8 @@ async function getDownloadUrl(versionInput: string | undefined, chromeapp: strin
     : plat === 'win32'
       ? 'chrome'
       : 'google-chrome-stable');
-  const result = await exec.getExecOutput(`${chromeCmd} --version`);
+  // invoke executable and arguments separately to handle spaces in path
+  const result = await exec.getExecOutput(chromeCmd, ['--version']);
   const chromeVersion = result.stdout.trim().split(' ')[2];
   const chromeMajor = parseInt(chromeVersion.split('.')[0], 10);
 
