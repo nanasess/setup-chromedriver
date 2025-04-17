@@ -58,15 +58,15 @@ async function getDownloadUrl(versionInput: string | undefined, chromeapp: strin
     }
   }
 
-  // determine Chrome version, handling spaces in path on each platform
+  // determine Chrome version via platform-specific invocation to handle spaces in path
   let result;
   if (plat === 'win32') {
-    // use cmd.exe on Windows with verbatim arguments to preserve spaces
+    // use cmd.exe with verbatim args on Windows
     result = await exec.getExecOutput('cmd', ['/C', chromeCmd, '--version'], { windowsVerbatimArguments: true });
   } else {
-    // use bash on *nix to run full path in shell, quoting if necessary
-    const cmdStr = chromeCmd.includes(' ') ? `"${chromeCmd}" --version` : `${chromeCmd} --version`;
-    result = await exec.getExecOutput('/bin/bash', ['-lc', cmdStr]);
+    // use POSIX shell on macOS/Linux to invoke path containing spaces
+    const cmdStr = `"${chromeCmd}" --version`;
+    result = await exec.getExecOutput('/bin/sh', ['-c', cmdStr]);
   }
   const chromeVersion = result.stdout.trim().split(' ')[2];
   const chromeMajor = parseInt(chromeVersion.split('.')[0], 10);
