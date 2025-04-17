@@ -61,8 +61,8 @@ async function getDownloadUrl(versionInput: string | undefined, chromeapp: strin
   // determine Chrome version via platform-specific invocation to handle spaces in path
   let result;
   if (plat === 'win32') {
-    // use cmd.exe with verbatim args on Windows
-    result = await exec.getExecOutput('cmd', ['/C', chromeCmd, '--version'], { windowsVerbatimArguments: true });
+    // spawn Chrome executable directly on Windows, windowsVerbatimArguments preserves spaces in path
+    result = await exec.getExecOutput(chromeCmd, ['--version'], { windowsVerbatimArguments: true });
   } else {
     // use POSIX shell on macOS/Linux to invoke path containing spaces
     const cmdStr = `"${chromeCmd}" --version`;
