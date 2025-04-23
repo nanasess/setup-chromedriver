@@ -6,7 +6,7 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "package": "ncc build lib/setup-chromedriver.js --source-map --license licenses.txt",
+    "package": "ncc build src/setup-chromedriver.ts --source-map --license licenses.txt",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "test": "jest"
