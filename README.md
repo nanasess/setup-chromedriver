@@ -9,7 +9,7 @@ This action sets up a [ChromeDriver](https://chromedriver.chromium.org/) for use
 
 ## OS/Platform support
 
-- ubuntu-latest, ubuntu-24.04, ubuntu-22.04 and ubuntu-20.04
+- ubuntu-latest, ubuntu-24.04 and ubuntu-22.04
 - macos-latest, macos-14 and macos-13
 - windows-latest, windows-2022 and windows-2019
 
