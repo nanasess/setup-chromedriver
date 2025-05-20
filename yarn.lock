@@ -2964,10 +2964,10 @@ saxes@^5.0.1:
   dependencies:
     xmlchars "^2.2.0"
 
-selenium-webdriver@^4.27.0:
-  version "4.27.0"
-  resolved "https://registry.yarnpkg.com/selenium-webdriver/-/selenium-webdriver-4.27.0.tgz#f0f26ce453805e7dc77151040442c67e441dbe7a"
-  integrity sha512-LkTJrNz5socxpPnWPODQ2bQ65eYx9JK+DQMYNihpTjMCqHwgWGYQnQTCAAche2W3ZP87alA+1zYPvgS8tHNzMQ==
+selenium-webdriver@^4.32.0:
+  version "4.32.0"
+  resolved "https://registry.yarnpkg.com/selenium-webdriver/-/selenium-webdriver-4.32.0.tgz#9bfe160cdac14d2d2876bba6eb369a09e9bd13ed"
+  integrity sha512-dG48JJnB96Aea1iVaZOKGmd6yT6aemeI1heWI/i8DtfD3pDX7uIlwpDBoGauNhtXAaFaamP+U4hIab8zZkg3Ag==
   dependencies:
     "@bazel/runfiles" "^6.3.1"
     jszip "^3.10.1"
