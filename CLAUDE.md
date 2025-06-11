@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+after merging pr, update relevant issues.
+
 ## Overview
 
 This is the setup-chromedriver GitHub Action repository that sets up ChromeDriver for use in GitHub Actions workflows. It supports Ubuntu, macOS, and Windows platforms.
