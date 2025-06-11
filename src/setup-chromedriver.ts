@@ -1,6 +1,9 @@
 import * as core from "@actions/core";
 import * as exec from "@actions/exec";
+import * as tc from "@actions/tool-cache";
 import * as path from "path";
+import * as os from "os";
+import * as fs from "fs";
 
 async function run() {
   try {
@@ -20,18 +23,47 @@ async function run() {
       case "linux":
         arch = "linux64";
     }
-    if (arch == "win32") {
-      await exec.exec(
-        "powershell -File " + path.join(__dirname, "../lib", "setup-chromedriver.ps1 "), [
-        version,
-        chromeapp
-      ]);
+
+    const jsonUrl = "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json";
+
+    if (arch === "win32") {
+      const chromeFullVersion = (await exec.getExecOutput(`powershell -Command "(Get-Item '${chromeapp}').VersionInfo.FileVersion"`)).stdout.trim();
+      const chromeMajorVersion = chromeFullVersion.split(".")[0];
+
+      if (parseInt(chromeMajorVersion) < 115) {
+        const response = (await exec.getExecOutput(`powershell -Command "(Invoke-WebRequest 'http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${chromeMajorVersion}').Content"`)).stdout.trim();
+        const version = response;
+        const url = `https://chromedriver.storage.googleapis.com/${version}/chromedriver_win32.zip`;
+        const downloadPath = await tc.downloadTool(url);
+        const extractPath = await tc.extractZip(downloadPath, "C:\\SeleniumWebDrivers\\ChromeDriver");
+        fs.unlinkSync(downloadPath);
+      } else {
+        const response = (await exec.getExecOutput(`powershell -Command "(Invoke-WebRequest '${jsonUrl}').Content | ConvertFrom-Json"`)).stdout.trim();
+        const json = JSON.parse(response);
+        const url = json.versions.find((v: any) => v.version === version).downloads.chromedriver.find((d: any) => d.platform === arch).url;
+        const downloadPath = await tc.downloadTool(url);
+        const extractPath = await tc.extractZip(downloadPath, "C:\\SeleniumWebDrivers\\ChromeDriver");
+        fs.unlinkSync(downloadPath);
+      }
     } else {
-      await exec.exec(path.join(__dirname, "../lib", "setup-chromedriver.sh"), [
-        version,
-        arch,
-        chromeapp,
-      ]);
+      const chromeVersion = (await exec.getExecOutput(`${chromeapp} --version`)).stdout.trim();
+      const chromeMajorVersion = chromeVersion.split(" ")[2].split(".")[0];
+
+      if (parseInt(chromeMajorVersion) < 115) {
+        const response = (await exec.getExecOutput(`curl --silent --location --fail --retry 10 "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_${chromeMajorVersion}"`)).stdout.trim();
+        const version = response;
+        const url = `https://chromedriver.storage.googleapis.com/${version}/chromedriver_${arch}.zip`;
+        const downloadPath = await tc.downloadTool(url);
+        const extractPath = await tc.extractZip(downloadPath, "/usr/local/bin");
+        fs.unlinkSync(downloadPath);
+      } else {
+        const response = (await exec.getExecOutput(`curl --silent --location --fail --retry 10 "${jsonUrl}"`)).stdout.trim();
+        const json = JSON.parse(response);
+        const url = json.versions.find((v: any) => v.version === version).downloads.chromedriver.find((d: any) => d.platform === arch).url;
+        const downloadPath = await tc.downloadTool(url);
+        const extractPath = await tc.extractZip(downloadPath, "/usr/local/bin");
+        fs.unlinkSync(downloadPath);
+      }
     }
   } catch (error: unknown) {
     if (error instanceof Error) {
