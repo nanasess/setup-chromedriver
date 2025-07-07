@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
+        os: [ ubuntu-latest, ubuntu-24.04, macos-latest, macos-11 ]
         branch:
           # - 'master'
           - 'now'
@@ -79,7 +79,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, ubuntu-20.04, macos-latest, macos-11 ]
+        os: [ ubuntu-latest, ubuntu-24.04, macos-latest, macos-11 ]
         branch:
           # - 'master'
           - 'now'
