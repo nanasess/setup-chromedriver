@@ -37,7 +37,7 @@ if [[ "${ARCH}" =~ ^linux64 ]]; then
     fi
 fi
 
-if [[ "${ARCH}" =~ ^mac64 && -z "${CHROMEAPP}" ]]; then
+if [[ "${ARCH}" =~ ^mac && -z "${CHROMEAPP}" ]]; then
     CHROMEAPP="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 fi
 
