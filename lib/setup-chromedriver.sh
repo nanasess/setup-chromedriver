@@ -55,6 +55,10 @@ if ((CHROME_VERSION < 115)); then
         VERSION=$(${CURL} "${URL}")
         echo "VERSION=${VERSION}"
     fi
+    # Legacy API doesn't have mac-arm64, use mac64 instead
+    if [[ "${ARCH}" == "mac-arm64" ]]; then
+        ARCH="mac64"
+    fi
     echo "Installing ChromeDriver ${VERSION} for ${ARCH}"
     URL="https://chromedriver.storage.googleapis.com/${VERSION}/chromedriver_${ARCH}.zip"
     echo "Downloading ${URL}..."
