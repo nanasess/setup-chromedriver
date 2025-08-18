@@ -70,7 +70,12 @@ if [[ -z "${VERSION}" ]]; then
     echo "VERSION=${VERSION}"
 fi
 if [[ "${ARCH}" =~ ^mac64 ]]; then
-    ARCH="mac-x64"
+    # Check if running on ARM64 macOS (Apple Silicon)
+    if [[ "${OS}" == "darwin" && $(uname -m) == "arm64" ]]; then
+        ARCH="mac-arm64"
+    else
+        ARCH="mac-x64"
+    fi
 fi
 
 echo "Downloading ${JSON_URL}..."

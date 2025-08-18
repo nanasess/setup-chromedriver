@@ -79,9 +79,11 @@ jobs:
         chromeapp: ${{ env.CHROMEAPP }}
     - name: setup
       run: |
-        export DISPLAY=:99
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          export DISPLAY=:99
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
+        fi
         chromedriver --url-base=/wd/hub &
-        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         node_modules/.bin/ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
 
   test_default_version:
@@ -122,7 +124,9 @@ jobs:
     - name: setup
       run: |
         "$CHROMEAPP" --version
-        export DISPLAY=:99
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          export DISPLAY=:99
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
+        fi
         chromedriver --url-base=/wd/hub &
-        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         node_modules/.bin/ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
