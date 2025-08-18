@@ -26,6 +26,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-22.04
           - macos-latest
+          - macos-15
           - macos-14
           - macos-13
         branch:
@@ -96,6 +97,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-22.04
           - macos-latest
+          - macos-15
           - macos-14
           - macos-13
         branch:
