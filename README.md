@@ -82,11 +82,11 @@ steps:
 
 ## 🖥️ Platform Support
 
-| Platform | Versions |
-|----------|----------|
-| **Ubuntu** | `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-22.04` |
-| **macOS** | `macos-latest`, `macos-14`, `macos-13` |
-| **Windows** | `windows-latest`, `windows-2022`, `windows-2019` |
+| Platform    | Versions                                          |
+|-------------|---------------------------------------------------|
+| **Ubuntu**  | `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-22.04`   |
+| **macOS**   | `macos-latest`, `macos-25 , macos-14`, `macos-13` |
+| **Windows** | `windows-latest`, `windows-2025 , windows-2022`   |
 
 ## ⚙️ Configuration
 
