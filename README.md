@@ -1,5 +1,5 @@
 <div align="center">
-  
+
 # 🚀 setup-chromedriver
 
 **A GitHub Action to set up ChromeDriver for automated testing**
@@ -82,11 +82,11 @@ steps:
 
 ## 🖥️ Platform Support
 
-| Platform | Versions |
-|----------|----------|
-| **Ubuntu** | `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-22.04` |
-| **macOS** | `macos-latest`, `macos-14`, `macos-13` |
-| **Windows** | `windows-latest`, `windows-2022`, `windows-2019` |
+| Platform    | Versions                                          |
+|-------------|---------------------------------------------------|
+| **Ubuntu**  | `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-22.04`   |
+| **macOS**   | `macos-latest`, `macos-25 , macos-14`, `macos-13` |
+| **Windows** | `windows-latest`, `windows-2025 , windows-2022`   |
 
 ## ⚙️ Configuration
 
@@ -110,15 +110,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: nanasess/setup-chromedriver@v2
-      
+
       - name: Start ChromeDriver
         run: |
           export DISPLAY=:99
           chromedriver --url-base=/wd/hub &
           sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 &
-          
+
       - name: Run tests
         run: npm test
 ```
@@ -134,12 +134,12 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: nanasess/setup-chromedriver@v2
-      
+
       - name: Start ChromeDriver
         run: chromedriver --url-base=/wd/hub &
-        
+
       - name: Run tests
         run: npm test
 ```
@@ -158,9 +158,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
-      
+
       - uses: nanasess/setup-chromedriver@v2
-      
+
       - name: Run tests
         run: npm test
 ```
@@ -176,16 +176,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Setup Chrome
         uses: browser-actions/setup-chrome@v1
         with:
           chrome-version: '131'
-          
+
       - uses: nanasess/setup-chromedriver@v2
         with:
           chromedriver-version: '131.0.6778.87'
-          
+
       - name: Run tests
         run: npm test
 ```
@@ -241,7 +241,7 @@ If you find this action helpful, please consider:
 ---
 
 <div align="center">
-  
+
 Made with ❤️ by [@nanasess](https://github.com/nanasess)
 
 </div>
