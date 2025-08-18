@@ -69,14 +69,11 @@ if [[ -z "${VERSION}" ]]; then
     VERSION=$("${CHROMEAPP}" --version | cut -d ' ' -f 3)
     echo "VERSION=${VERSION}"
 fi
-if [[ "${ARCH}" =~ ^mac64 ]]; then
-    # Check if running on ARM64 macOS (Apple Silicon)
-    if [[ "${OS}" == "darwin" && $(uname -m) == "arm64" ]]; then
-        ARCH="mac-arm64"
-    else
-        ARCH="mac-x64"
-    fi
+# Convert architecture names to Chrome for Testing API format
+if [[ "${ARCH}" == "mac64" ]]; then
+    ARCH="mac-x64"
 fi
+# mac-arm64 is already in the correct format
 
 echo "Downloading ${JSON_URL}..."
 JSON=$(${CURL} "${JSON_URL}")
