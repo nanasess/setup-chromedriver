@@ -21,7 +21,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, windows-2025, windows-2022, windows-2019 ]
+        os: [ windows-latest, windows-2025, windows-2022 ]
         branch:
           # - 'master'
           - 'now'
@@ -74,7 +74,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ windows-latest, windows-2025, windows-2022, windows-2019 ]
+        os: [ windows-latest, windows-2025, windows-2022 ]
         branch:
           # - 'master'
           - 'now'
