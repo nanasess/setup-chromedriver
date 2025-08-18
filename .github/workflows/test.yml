@@ -62,10 +62,6 @@ jobs:
       run: |
         CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ')
         echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
-    - if: matrix.chrome_version == 'current' && startsWith(matrix.os, 'macos')
-      env:
-        CHROME_VERSION: '114.0.5735.90'
-      run: echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
     - uses: ./
       if: matrix.branch == 'now'
       with:
