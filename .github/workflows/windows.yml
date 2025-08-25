@@ -26,7 +26,7 @@ jobs:
           # - 'master'
           - 'now'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - run: yarn install --frozen-lockfile
@@ -79,7 +79,7 @@ jobs:
           # - 'master'
           - 'now'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - run: yarn install --frozen-lockfile
