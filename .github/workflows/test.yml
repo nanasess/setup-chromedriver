@@ -28,7 +28,6 @@ jobs:
           - macos-latest
           - macos-15
           - macos-14
-          - macos-13
         branch:
           # - 'master'
           - 'now'
@@ -93,7 +92,6 @@ jobs:
           - macos-latest
           - macos-15
           - macos-14
-          - macos-13
         branch:
           # - 'master'
           - 'now'
