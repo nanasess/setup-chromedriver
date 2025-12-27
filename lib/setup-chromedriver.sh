@@ -37,7 +37,7 @@ if [[ "${ARCH}" =~ ^linux64 ]]; then
     fi
 fi
 
-if [[ "${ARCH}" =~ ^mac64 && -z "${CHROMEAPP}" ]]; then
+if [[ "${ARCH}" =~ ^mac && -z "${CHROMEAPP}" ]]; then
     CHROMEAPP="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 fi
 
@@ -55,6 +55,10 @@ if ((CHROME_VERSION < 115)); then
         VERSION=$(${CURL} "${URL}")
         echo "VERSION=${VERSION}"
     fi
+    # Legacy API doesn't have mac-arm64, use mac64 instead
+    if [[ "${ARCH}" == "mac-arm64" ]]; then
+        ARCH="mac64"
+    fi
     echo "Installing ChromeDriver ${VERSION} for ${ARCH}"
     URL="https://chromedriver.storage.googleapis.com/${VERSION}/chromedriver_${ARCH}.zip"
     echo "Downloading ${URL}..."
@@ -69,9 +73,11 @@ if [[ -z "${VERSION}" ]]; then
     VERSION=$("${CHROMEAPP}" --version | cut -d ' ' -f 3)
     echo "VERSION=${VERSION}"
 fi
-if [[ "${ARCH}" =~ ^mac64 ]]; then
+# Convert architecture names to Chrome for Testing API format
+if [[ "${ARCH}" == "mac64" ]]; then
     ARCH="mac-x64"
 fi
+# mac-arm64 is already in the correct format
 
 echo "Downloading ${JSON_URL}..."
 JSON=$(${CURL} "${JSON_URL}")
