@@ -40,7 +40,7 @@
     "@vercel/ncc": "^0.38.3",
     "husky": "^9.1.7",
     "jest": "^27.5.1",
-    "jest-circus": "^29.7.0",
+    "jest-circus": "^30.2.0",
     "prettier": "^3.7.4",
     "selenium-webdriver": "^4.33.0",
     "ts-jest": "^27.1.3",
