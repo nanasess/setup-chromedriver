@@ -2,7 +2,7 @@
  * API integration tests for Chrome for Testing endpoints.
  * These tests hit real network endpoints and should be run in CI.
  *
- * Run with: yarn test __tests__/chromedriver-api.test.ts
+ * Run with: RUN_CHROMEDRIVER_API_TESTS=1 yarn test __tests__/chromedriver-api.test.ts
  */
 
 import {
@@ -18,7 +18,11 @@ const JSON_URL =
 // Increase timeout for network requests
 jest.setTimeout(30000);
 
-describe("Chrome for Testing JSON API", () => {
+// Skip API tests unless explicitly enabled via environment variable
+const runIntegration = process.env.RUN_CHROMEDRIVER_API_TESTS === "1";
+const describeIfIntegration = runIntegration ? describe : describe.skip;
+
+describeIfIntegration("Chrome for Testing JSON API", () => {
   let json: ChromeKnownGoodVersions;
 
   beforeAll(async () => {
@@ -57,7 +61,7 @@ describe("Chrome for Testing JSON API", () => {
   });
 });
 
-describe("Legacy API", () => {
+describeIfIntegration("Legacy API", () => {
   it("LATEST_RELEASE_114 returns a valid version string", async () => {
     const url = buildLegacyLatestReleaseUrl(114);
     const response = await fetch(url);
