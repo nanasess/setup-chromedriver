@@ -9,5 +9,5 @@ inputs:
     description: "Custom chrome binary name (for Linux or MacOS)"
     required: false
 runs:
-  using: "node20"
+  using: "node24"
   main: "dist/index.js"

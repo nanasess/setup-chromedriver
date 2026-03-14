@@ -25,11 +25,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04
           - ubuntu-22.04
-          - ubuntu-20.04
           - macos-latest
+          - macos-15
           - macos-14
-          - macos-13
-          - macos-12
         branch:
           # - 'master'
           - 'now'
@@ -38,7 +36,7 @@ jobs:
           # FIXME https://github.com/nanasess/setup-chromedriver/issues/229
           # - '114.0.5735.90'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - if: startsWith(matrix.os, 'ubuntu')
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
@@ -63,12 +61,6 @@ jobs:
       run: |
         CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ')
         echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
-    - if: matrix.chrome_version == 'current' && startsWith(matrix.os, 'maos')
-      env:
-        CHROME_VERSION: '114.0.5735.90'
-      run: |
-        CHROME_VERSION=$(echo $CHROME_VERSION | cut -d '.' -f 1)
-        echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
     - uses: ./
       if: matrix.branch == 'now'
       with:
@@ -81,9 +73,11 @@ jobs:
         chromeapp: ${{ env.CHROMEAPP }}
     - name: setup
       run: |
-        export DISPLAY=:99
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          export DISPLAY=:99
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
+        fi
         chromedriver --url-base=/wd/hub &
-        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         node_modules/.bin/ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts
 
   test_default_version:
@@ -95,16 +89,14 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04
           - ubuntu-22.04
-          - ubuntu-20.04
           - macos-latest
+          - macos-15
           - macos-14
-          - macos-13
-          - macos-12
         branch:
           # - 'master'
           - 'now'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - if: startsWith(matrix.os, 'ubuntu')
       run: echo 'CHROMEAPP=google-chrome' >> $GITHUB_ENV
     - if: startsWith(matrix.os, 'macos')
@@ -126,7 +118,9 @@ jobs:
     - name: setup
       run: |
         "$CHROMEAPP" --version
-        export DISPLAY=:99
+        if [[ "${{ runner.os }}" == "Linux" ]]; then
+          export DISPLAY=:99
+          sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
+        fi
         chromedriver --url-base=/wd/hub &
-        sudo Xvfb -ac :99 -screen 0 1280x1024x24 > /dev/null 2>&1 & # disable headless mode
         node_modules/.bin/ts-node $GITHUB_WORKSPACE/__tests__/chromedriver.ts

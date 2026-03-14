@@ -1,6 +1,7 @@
 import * as core from "@actions/core";
 import * as exec from "@actions/exec";
 import * as path from "path";
+import * as os from "os";
 
 async function run() {
   try {
@@ -14,7 +15,12 @@ async function run() {
         arch = plat;
         break;
       case "darwin":
-        arch = "mac64";
+        // Check if running on ARM64 macOS (Apple Silicon)
+        if (os.arch() === "arm64") {
+          arch = "mac-arm64";
+        } else {
+          arch = "mac64";
+        }
         break;
       default:
       case "linux":
