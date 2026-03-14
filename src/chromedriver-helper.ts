@@ -85,19 +85,19 @@ export function buildLegacyDownloadUrl(version: string, arch: string): string {
 // JSON response parsing (Modern API)
 // ---------------------------------------------------------------------------
 
-interface ChromeDriverDownload {
+export interface ChromeDriverDownload {
   platform: string;
   url: string;
 }
 
-interface ChromeVersion {
+export interface ChromeVersion {
   version: string;
   downloads: {
     chromedriver?: ChromeDriverDownload[];
   };
 }
 
-interface ChromeKnownGoodVersions {
+export interface ChromeKnownGoodVersions {
   versions: ChromeVersion[];
 }
 
