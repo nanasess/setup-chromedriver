@@ -107,10 +107,11 @@ export function extractDriverUrlFromJson(
   platform: string
 ): string | null {
   const entry = json.versions.find((v) => v.version === version);
-  if (!entry || !entry.downloads.chromedriver) {
+  const chromedrivers = entry?.downloads?.chromedriver;
+  if (!chromedrivers) {
     return null;
   }
-  const download = entry.downloads.chromedriver.find(
+  const download = chromedrivers.find(
     (d) => d.platform === platform
   );
   return download?.url ?? null;
