@@ -33,7 +33,8 @@ const JSON_URL =
 /**
  * Detect the full Chrome version string.
  *
- * - win32: run `powershell -command "(Get-Item '<chromeapp>').VersionInfo.FileVersion"`
+ * - win32: run `powershell -command "(Get-Item $env:CHROME_PATH).VersionInfo.FileVersion"`
+ *   with the path passed via the CHROME_PATH env var (avoids command injection),
  *   and return the trimmed stdout (the PE FileVersion, e.g. "120.0.6099.109").
  * - linux/darwin: run `<chromeapp> --version` and return the third
  *   whitespace-separated token (equivalent to `cut -d' ' -f3`).
@@ -50,10 +51,16 @@ export async function detectFullChromeVersion(
   };
 
   if (platform === "win32") {
+    // Pass the path via an environment variable rather than interpolating it
+    // into the -command string. String interpolation would allow a chromeapp
+    // value containing a single quote to break out of the quoted literal and
+    // inject arbitrary PowerShell (command injection). The original ps1 used a
+    // bound variable (`Get-Item $chromeapp`) and was not vulnerable; reading
+    // from $env:CHROME_PATH restores that safety.
     await exec.exec(
       "powershell",
-      ["-command", `(Get-Item '${chromeapp}').VersionInfo.FileVersion`],
-      { listeners },
+      ["-command", "(Get-Item $env:CHROME_PATH).VersionInfo.FileVersion"],
+      { listeners, env: { ...process.env, CHROME_PATH: chromeapp } },
     );
     return stdout.trim();
   }

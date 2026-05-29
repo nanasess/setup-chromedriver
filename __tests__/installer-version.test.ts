@@ -117,12 +117,34 @@ describe("detectFullChromeVersion", () => {
 
     expect(version).toBe("120.0.6099.109");
     expect(mockedExec).toHaveBeenCalledTimes(1);
-    const [cmd, args] = mockedExec.mock.calls[0];
+    const [cmd, args, options] = mockedExec.mock.calls[0];
     expect(cmd).toBe("powershell");
+    // The path is read from $env:CHROME_PATH, not interpolated into the
+    // -command string (command-injection guard).
     expect(args).toEqual([
       "-command",
-      `(Get-Item '${chromeapp}').VersionInfo.FileVersion`,
+      "(Get-Item $env:CHROME_PATH).VersionInfo.FileVersion",
     ]);
+    expect(options?.env?.CHROME_PATH).toBe(chromeapp);
+    // The raw path must never appear in the command arguments.
+    expect((args as string[]).join(" ")).not.toContain(chromeapp);
+  });
+
+  it("does not allow command injection via a malicious chromeapp path on win32", async () => {
+    execWithStdout("120.0.6099.109\r\n");
+
+    // A path crafted to break out of a quoted PowerShell literal.
+    const malicious = "x'; Start-Process calc; '";
+    await detectFullChromeVersion("win32", malicious);
+
+    const [, args, options] = mockedExec.mock.calls[0];
+    // The payload is confined to the env var; the command string is static.
+    expect(args).toEqual([
+      "-command",
+      "(Get-Item $env:CHROME_PATH).VersionInfo.FileVersion",
+    ]);
+    expect(options?.env?.CHROME_PATH).toBe(malicious);
+    expect((args as string[]).join(" ")).not.toContain("Start-Process");
   });
 
   it("accumulates stdout emitted across multiple chunks", async () => {
