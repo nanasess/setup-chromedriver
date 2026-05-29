@@ -67,10 +67,15 @@ function setPresentCommands(present: string[]): void {
  * Extract every `exec.exec` call as a flat [command, args] tuple list for
  * easier assertions.
  */
-function execCalls(): Array<{ command: string; args: string[] }> {
+function execCalls(): Array<{
+  command: string;
+  args: string[];
+  options?: exec.ExecOptions;
+}> {
   return execMock.mock.calls.map((call) => ({
     command: call[0],
     args: (call[1] as string[]) ?? [],
+    options: call[2] as exec.ExecOptions | undefined,
   }));
 }
 
@@ -174,11 +179,15 @@ describe("installOnUnix - linux apt dependency installation", () => {
     expect(aptKey!.args).toContain("4EB27DB2A3B88B8B");
     expect(aptKey!.args).toContain("keyserver.ubuntu.com");
 
-    // tee google.list via sh -c.
-    const tee = calls.find((c) => c.command === "sh" && c.args[0] === "-c");
+    // tee google.list: no shell — the repo line is piped to tee's stdin via
+    // the `input` option, and tee runs under sudo (command path or args).
+    const tee = calls.find(
+      (c) => c.command === "tee" || c.args.includes("tee"),
+    );
     expect(tee).toBeDefined();
-    expect(tee!.args[1]).toContain("/etc/apt/sources.list.d/google.list");
-    expect(tee!.args[1]).toContain(
+    expect(tee!.args).toContain("/etc/apt/sources.list.d/google.list");
+    const teeInput = (tee!.options?.input as Buffer | undefined)?.toString();
+    expect(teeInput).toContain(
       "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main",
     );
 

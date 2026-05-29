@@ -42,5 +42,9 @@ export async function downloadAndExtractZip(url: string): Promise<string> {
       }
     }
   }
-  throw lastError;
+  const message =
+    lastError instanceof Error ? lastError.message : String(lastError);
+  throw new Error(
+    `Failed to download and extract ChromeDriver from ${url} after ${maxRetries} attempts: ${message}`,
+  );
 }
