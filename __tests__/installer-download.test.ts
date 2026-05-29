@@ -16,6 +16,11 @@ describe("downloadAndExtractZip", () => {
     jest.clearAllMocks();
   });
 
+  afterEach(() => {
+    // Reset timers in case a test enabled fake timers for the retry backoff.
+    jest.useRealTimers();
+  });
+
   it("downloads the zip then extracts it and returns the extracted directory", async () => {
     const url = "https://example.com/chromedriver-linux64.zip";
     const zipPath = "/tmp/download/chromedriver.zip";
@@ -50,6 +55,8 @@ describe("downloadAndExtractZip", () => {
   });
 
   it("retries on transient failure and eventually succeeds", async () => {
+    // Fake timers so the inter-attempt backoff does not add real delay.
+    jest.useFakeTimers();
     const extractedDir = "/tmp/extracted/chromedriver";
     mockedTc.downloadTool
       .mockRejectedValueOnce(new Error("network error 1"))
@@ -57,9 +64,12 @@ describe("downloadAndExtractZip", () => {
       .mockResolvedValue("/tmp/download/chromedriver.zip");
     mockedTc.extractZip.mockResolvedValue(extractedDir);
 
-    const result = await downloadAndExtractZip(
+    const promise = downloadAndExtractZip(
       "https://example.com/chromedriver.zip",
     );
+    // Drain the backoff timers scheduled between the failed attempts.
+    await jest.runAllTimersAsync();
+    const result = await promise;
 
     expect(result).toBe(extractedDir);
     expect(mockedTc.downloadTool).toHaveBeenCalledTimes(3);
@@ -67,16 +77,18 @@ describe("downloadAndExtractZip", () => {
   });
 
   it("throws the last error after exhausting all retries (max 10)", async () => {
+    jest.useFakeTimers();
     const finalError = new Error("final failure");
-    mockedTc.downloadTool
-      .mockRejectedValue(new Error("earlier failure"))
-      .mockRejectedValue(finalError);
-    // Ensure the final attempt rejects with finalError.
     mockedTc.downloadTool.mockRejectedValue(finalError);
 
-    await expect(
-      downloadAndExtractZip("https://example.com/chromedriver.zip"),
-    ).rejects.toThrow("final failure");
+    const promise = downloadAndExtractZip(
+      "https://example.com/chromedriver.zip",
+    );
+    // Attach the rejection expectation before advancing timers so the
+    // rejection is handled (no unhandled-rejection warning).
+    const expectation = expect(promise).rejects.toThrow("final failure");
+    await jest.runAllTimersAsync();
+    await expectation;
 
     expect(mockedTc.downloadTool).toHaveBeenCalledTimes(10);
     expect(mockedTc.extractZip).not.toHaveBeenCalled();

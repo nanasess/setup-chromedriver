@@ -8,9 +8,10 @@ import * as tc from "@actions/tool-cache";
  *
  * Note: @actions/tool-cache's downloadTool already retries transient failures
  * internally (3 attempts, exponential backoff). We wrap it in an additional
- * retry loop so the overall behavior approximates the shell scripts' curl
- * `--retry 10`. downloadTool throttles via HttpClient and does not expose a
- * retry-count argument, so the retry is implemented here.
+ * retry loop with a linear backoff between attempts so the overall behavior
+ * approximates the shell scripts' curl `--retry 10` (which itself backs off
+ * between retries). downloadTool throttles via HttpClient and does not expose
+ * a retry-count argument, so the retry is implemented here.
  *
  * The caller (unix.ts / windows.ts) is responsible for resolving the final
  * binary path inside the returned directory, since the zip layout differs
@@ -22,6 +23,8 @@ import * as tc from "@actions/tool-cache";
  */
 export async function downloadAndExtractZip(url: string): Promise<string> {
   const maxRetries = 10;
+  // Linear backoff base (ms), consistent with installer/http.ts.
+  const retryBaseMs = 500;
   let lastError: unknown;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -30,6 +33,13 @@ export async function downloadAndExtractZip(url: string): Promise<string> {
       return extractedDir;
     } catch (error) {
       lastError = error;
+      // Back off between attempts to avoid hammering the server and to give
+      // transient failures time to clear (mirrors curl --retry behavior).
+      if (attempt < maxRetries) {
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryBaseMs * attempt),
+        );
+      }
     }
   }
   throw lastError;
