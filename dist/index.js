@@ -178,9 +178,10 @@ const tc = __importStar(__nccwpck_require__(3472));
  *
  * Note: @actions/tool-cache's downloadTool already retries transient failures
  * internally (3 attempts, exponential backoff). We wrap it in an additional
- * retry loop so the overall behavior approximates the shell scripts' curl
- * `--retry 10`. downloadTool throttles via HttpClient and does not expose a
- * retry-count argument, so the retry is implemented here.
+ * retry loop with a linear backoff between attempts so the overall behavior
+ * approximates the shell scripts' curl `--retry 10` (which itself backs off
+ * between retries). downloadTool throttles via HttpClient and does not expose
+ * a retry-count argument, so the retry is implemented here.
  *
  * The caller (unix.ts / windows.ts) is responsible for resolving the final
  * binary path inside the returned directory, since the zip layout differs
@@ -192,6 +193,8 @@ const tc = __importStar(__nccwpck_require__(3472));
  */
 async function downloadAndExtractZip(url) {
     const maxRetries = 10;
+    // Linear backoff base (ms), consistent with installer/http.ts.
+    const retryBaseMs = 500;
     let lastError;
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -201,9 +204,15 @@ async function downloadAndExtractZip(url) {
         }
         catch (error) {
             lastError = error;
+            // Back off between attempts to avoid hammering the server and to give
+            // transient failures time to clear (mirrors curl --retry behavior).
+            if (attempt < maxRetries) {
+                await new Promise((resolve) => setTimeout(resolve, retryBaseMs * attempt));
+            }
         }
     }
-    throw lastError;
+    const message = lastError instanceof Error ? lastError.message : String(lastError);
+    throw new Error(`Failed to download and extract ChromeDriver from ${url} after ${maxRetries} attempts: ${message}`);
 }
 
 
@@ -477,12 +486,15 @@ async function installLinuxDependencies(sudo, chromeapp) {
             "4EB27DB2A3B88B8B",
         ]);
         // `echo "deb [arch=amd64] ..." | ${sudo} tee /etc/apt/sources.list.d/google.list >/dev/null`
-        // Reproduce the piped `tee` (run under sudo when available) via `sh -c`.
-        const teeCommand = sudo ? `${sudo} tee` : "tee";
-        await exec.exec("sh", [
-            "-c",
-            `echo "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main" | ${teeCommand} /etc/apt/sources.list.d/google.list >/dev/null`,
-        ]);
+        // Reproduce the piped `tee` without invoking a shell: feed the repo line to
+        // tee's stdin via @actions/exec's `input` option, and run tee under sudo
+        // when available. Avoiding `sh -c` removes any shell string interpolation.
+        const teeArgs = ["/etc/apt/sources.list.d/google.list"];
+        await runWithSudo(sudo, "tee", teeArgs, {
+            input: Buffer.from("deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main\n"),
+            // Mirror the original `>/dev/null` (suppress tee echoing stdin to stdout).
+            silent: true,
+        });
         // `APP=google-chrome-stable`
         app = "google-chrome-stable";
     }
@@ -694,7 +706,8 @@ const JSON_URL = "https://googlechromelabs.github.io/chrome-for-testing/known-go
 /**
  * Detect the full Chrome version string.
  *
- * - win32: run `powershell -command "(Get-Item '<chromeapp>').VersionInfo.FileVersion"`
+ * - win32: run `powershell -command "(Get-Item $env:CHROME_PATH).VersionInfo.FileVersion"`
+ *   with the path passed via the CHROME_PATH env var (avoids command injection),
  *   and return the trimmed stdout (the PE FileVersion, e.g. "120.0.6099.109").
  * - linux/darwin: run `<chromeapp> --version` and return the third
  *   whitespace-separated token (equivalent to `cut -d' ' -f3`).
@@ -706,17 +719,29 @@ async function detectFullChromeVersion(platform, chromeapp) {
             stdout += data.toString();
         },
     };
-    if (platform === "win32") {
-        await exec.exec("powershell", ["-command", `(Get-Item '${chromeapp}').VersionInfo.FileVersion`], { listeners });
-        return stdout.trim();
+    try {
+        if (platform === "win32") {
+            // Pass the path via an environment variable rather than interpolating it
+            // into the -command string. String interpolation would allow a chromeapp
+            // value containing a single quote to break out of the quoted literal and
+            // inject arbitrary PowerShell (command injection). The original ps1 used a
+            // bound variable (`Get-Item $chromeapp`) and was not vulnerable; reading
+            // from $env:CHROME_PATH restores that safety.
+            await exec.exec("powershell", ["-command", "(Get-Item $env:CHROME_PATH).VersionInfo.FileVersion"], { listeners, env: { ...process.env, CHROME_PATH: chromeapp } });
+            return stdout.trim();
+        }
+        // Quote the path: @actions/exec splits the command line on spaces, so an
+        // unquoted chromeapp with spaces (e.g. macOS "/Applications/Google
+        // Chrome.app/...") would be truncated at the first space. The shell scripts
+        // quoted it as `"${CHROMEAPP}"`; we reproduce that here.
+        await exec.exec(`"${chromeapp}"`, ["--version"], { listeners });
+        // `cut -d' ' -f3`: split on spaces, take the third token.
+        return stdout.trim().split(" ")[2];
     }
-    // Quote the path: @actions/exec splits the command line on spaces, so an
-    // unquoted chromeapp with spaces (e.g. macOS "/Applications/Google
-    // Chrome.app/...") would be truncated at the first space. The shell scripts
-    // quoted it as `"${CHROMEAPP}"`; we reproduce that here.
-    await exec.exec(`"${chromeapp}"`, ["--version"], { listeners });
-    // `cut -d' ' -f3`: split on spaces, take the third token.
-    return stdout.trim().split(" ")[2];
+    catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        throw new Error(`Failed to detect the Chrome version using "${chromeapp}": ${message}`);
+    }
 }
 /**
  * Resolve the modern (Chrome-for-Testing) ChromeDriver download for a given
@@ -857,7 +882,11 @@ async function installOnWindows(opts) {
         const extractedDir = await (0, download_1.downloadAndExtractZip)(url);
         // Legacy zip: chromedriver.exe is at the root of the archive.
         const binary = path.join(extractedDir, "chromedriver.exe");
-        await io.mv(binary, path.join(installPath, "chromedriver.exe"), {
+        // Use cp, not mv: tool-cache extracts to the temp drive (D:) while the
+        // install path is on C:, and io.mv uses fs.rename which fails with EXDEV
+        // across drives. The original ps1 used Move-Item, which copies across
+        // volumes. A copy achieves the same install (the temp source is ephemeral).
+        await io.cp(binary, path.join(installPath, "chromedriver.exe"), {
             force: true,
         });
         return;
@@ -875,7 +904,9 @@ async function installOnWindows(opts) {
     // Expand-Archive -Force without -DestinationPath; tool-cache.extractZip
     // honors the real zip structure, so we do not reproduce the double nesting.)
     const binary = path.join(extractedDir, "chromedriver-win32", "chromedriver.exe");
-    await io.mv(binary, path.join(installPath, "chromedriver.exe"), {
+    // Use cp, not mv: see the legacy branch above — io.mv (fs.rename) fails with
+    // EXDEV when the temp drive (D:) and the install path (C:) differ.
+    await io.cp(binary, path.join(installPath, "chromedriver.exe"), {
         force: true,
     });
 }
