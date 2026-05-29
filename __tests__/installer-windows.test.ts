@@ -48,7 +48,7 @@ const DEFAULT_CHROME_PATH =
 beforeEach(() => {
   jest.clearAllMocks();
   mockedIo.mkdirP.mockResolvedValue(undefined as never);
-  mockedIo.mv.mockResolvedValue(undefined as never);
+  mockedIo.cp.mockResolvedValue(undefined as never);
   mockedDownloadAndExtractZip.mockResolvedValue("C:\\extracted");
 });
 
@@ -105,13 +105,13 @@ describe("installOnWindows (modern, >=115)", () => {
     );
   });
 
-  it("moves the single-nested chromedriver-win32/chromedriver.exe to the install path", async () => {
+  it("copies the single-nested chromedriver-win32/chromedriver.exe to the install path", async () => {
     await installOnWindows({ version: "", chromeapp: "" });
 
     expect(mockedDownloadAndExtractZip).toHaveBeenCalledWith(
       "https://example.com/chromedriver-win32.zip",
     );
-    expect(mockedIo.mv).toHaveBeenCalledWith(
+    expect(mockedIo.cp).toHaveBeenCalledWith(
       path.join("C:\\extracted", "chromedriver-win32", "chromedriver.exe"),
       path.join(INSTALL_PATH, "chromedriver.exe"),
       { force: true },
@@ -140,10 +140,10 @@ describe("installOnWindows (legacy, <115)", () => {
     );
   });
 
-  it("moves chromedriver.exe from the zip root to the install path", async () => {
+  it("copies chromedriver.exe from the zip root to the install path", async () => {
     await installOnWindows({ version: "", chromeapp: "" });
 
-    expect(mockedIo.mv).toHaveBeenCalledWith(
+    expect(mockedIo.cp).toHaveBeenCalledWith(
       path.join("C:\\extracted", "chromedriver.exe"),
       path.join(INSTALL_PATH, "chromedriver.exe"),
       { force: true },

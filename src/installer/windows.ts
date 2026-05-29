@@ -68,7 +68,11 @@ export async function installOnWindows(opts: {
     const extractedDir = await downloadAndExtractZip(url);
     // Legacy zip: chromedriver.exe is at the root of the archive.
     const binary = path.join(extractedDir, "chromedriver.exe");
-    await io.mv(binary, path.join(installPath, "chromedriver.exe"), {
+    // Use cp, not mv: tool-cache extracts to the temp drive (D:) while the
+    // install path is on C:, and io.mv uses fs.rename which fails with EXDEV
+    // across drives. The original ps1 used Move-Item, which copies across
+    // volumes. A copy achieves the same install (the temp source is ephemeral).
+    await io.cp(binary, path.join(installPath, "chromedriver.exe"), {
       force: true,
     });
     return;
@@ -91,7 +95,9 @@ export async function installOnWindows(opts: {
     "chromedriver-win32",
     "chromedriver.exe",
   );
-  await io.mv(binary, path.join(installPath, "chromedriver.exe"), {
+  // Use cp, not mv: see the legacy branch above — io.mv (fs.rename) fails with
+  // EXDEV when the temp drive (D:) and the install path (C:) differ.
+  await io.cp(binary, path.join(installPath, "chromedriver.exe"), {
     force: true,
   });
 }
