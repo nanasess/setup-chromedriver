@@ -86,7 +86,8 @@ describe("detectFullChromeVersion", () => {
     expect(version).toBe("131.0.6778.204");
     expect(mockedExec).toHaveBeenCalledTimes(1);
     const [cmd, args] = mockedExec.mock.calls[0];
-    expect(cmd).toBe("google-chrome-stable");
+    // The command line is quoted to survive @actions/exec space-splitting.
+    expect(cmd).toBe('"google-chrome-stable"');
     expect(args).toEqual(["--version"]);
   });
 
@@ -100,8 +101,9 @@ describe("detectFullChromeVersion", () => {
 
     expect(version).toBe("120.0.6099.109");
     const [cmd, args] = mockedExec.mock.calls[0];
+    // Quoted so the space in the .app path is not split by @actions/exec.
     expect(cmd).toBe(
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+      '"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"',
     );
     expect(args).toEqual(["--version"]);
   });

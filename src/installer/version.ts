@@ -58,7 +58,11 @@ export async function detectFullChromeVersion(
     return stdout.trim();
   }
 
-  await exec.exec(chromeapp, ["--version"], { listeners });
+  // Quote the path: @actions/exec splits the command line on spaces, so an
+  // unquoted chromeapp with spaces (e.g. macOS "/Applications/Google
+  // Chrome.app/...") would be truncated at the first space. The shell scripts
+  // quoted it as `"${CHROMEAPP}"`; we reproduce that here.
+  await exec.exec(`"${chromeapp}"`, ["--version"], { listeners });
   // `cut -d' ' -f3`: split on spaces, take the third token.
   return stdout.trim().split(" ")[2];
 }

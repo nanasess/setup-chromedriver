@@ -615,7 +615,9 @@ async function installOnUnix(opts) {
     // `if command -v "${CHROMEAPP}" >/dev/null; then echo Chrome version:; "${CHROMEAPP}" --version; fi`
     if (await commandExists(chromeapp)) {
         core.info("Chrome version:");
-        await exec.exec(chromeapp, ["--version"]);
+        // Quote the path: @actions/exec splits the command line on spaces (see
+        // version.ts), so a chromeapp path containing spaces must be quoted.
+        await exec.exec(`"${chromeapp}"`, ["--version"]);
     }
     // `echo Chromedriver version:; /usr/local/bin/chromedriver --version`
     core.info("Chromedriver version:");
@@ -708,7 +710,11 @@ async function detectFullChromeVersion(platform, chromeapp) {
         await exec.exec("powershell", ["-command", `(Get-Item '${chromeapp}').VersionInfo.FileVersion`], { listeners });
         return stdout.trim();
     }
-    await exec.exec(chromeapp, ["--version"], { listeners });
+    // Quote the path: @actions/exec splits the command line on spaces, so an
+    // unquoted chromeapp with spaces (e.g. macOS "/Applications/Google
+    // Chrome.app/...") would be truncated at the first space. The shell scripts
+    // quoted it as `"${CHROMEAPP}"`; we reproduce that here.
+    await exec.exec(`"${chromeapp}"`, ["--version"], { listeners });
     // `cut -d' ' -f3`: split on spaces, take the third token.
     return stdout.trim().split(" ")[2];
 }

@@ -282,7 +282,9 @@ export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
   // `if command -v "${CHROMEAPP}" >/dev/null; then echo Chrome version:; "${CHROMEAPP}" --version; fi`
   if (await commandExists(chromeapp)) {
     core.info("Chrome version:");
-    await exec.exec(chromeapp, ["--version"]);
+    // Quote the path: @actions/exec splits the command line on spaces (see
+    // version.ts), so a chromeapp path containing spaces must be quoted.
+    await exec.exec(`"${chromeapp}"`, ["--version"]);
   }
   // `echo Chromedriver version:; /usr/local/bin/chromedriver --version`
   core.info("Chromedriver version:");

@@ -14,6 +14,7 @@
 
 import * as exec from "@actions/exec";
 import * as io from "@actions/io";
+import * as path from "path";
 
 import { installOnUnix } from "../src/installer/unix";
 import { downloadAndExtractZip as _downloadAndExtractZip } from "../src/installer/download";
@@ -278,7 +279,7 @@ describe("installOnUnix - legacy (<115)", () => {
 
     // Legacy zip => binary at the root.
     const move = findMove();
-    expect(move.source).toBe("/tmp/legacy/chromedriver");
+    expect(move.source).toBe(path.join("/tmp/legacy", "chromedriver"));
     expect(move.dest).toBe(INSTALL_PATH);
 
     // Legacy path returns before printing "Chromedriver version:" => no
@@ -341,7 +342,9 @@ describe("installOnUnix - modern (>=115)", () => {
 
     const move = findMove();
     // Modern Unix zip nests under chromedriver-<arch>/.
-    expect(move.source).toBe("/tmp/modern/chromedriver-linux64/chromedriver");
+    expect(move.source).toBe(
+      path.join("/tmp/modern", "chromedriver-linux64", "chromedriver"),
+    );
     expect(move.dest).toBe(INSTALL_PATH);
   });
 
@@ -359,7 +362,9 @@ describe("installOnUnix - modern (>=115)", () => {
     // resolveModernDownload must be called with the converted modern arch.
     expect(resolveModernDownload).toHaveBeenCalledWith("131", "mac-x64");
     const move = findMove();
-    expect(move.source).toBe("/tmp/mac/chromedriver-mac-x64/chromedriver");
+    expect(move.source).toBe(
+      path.join("/tmp/mac", "chromedriver-mac-x64", "chromedriver"),
+    );
   });
 
   test("modern prints chromedriver version (and chrome version when present)", async () => {
@@ -374,11 +379,12 @@ describe("installOnUnix - modern (>=115)", () => {
     });
 
     const calls = execCalls();
-    // chromeapp present => `<chromeapp> --version` is invoked.
+    // chromeapp present => `"<chromeapp>" --version` is invoked (quoted to
+    // survive @actions/exec space-splitting).
     expect(
       calls.some(
         (c) =>
-          c.command === "google-chrome-stable" && c.args[0] === "--version",
+          c.command === '"google-chrome-stable"' && c.args[0] === "--version",
       ),
     ).toBe(true);
     // `<installPath> --version` is invoked.
@@ -424,7 +430,9 @@ describe("installOnUnix - sudo handling in mv", () => {
 
     const move = findMove();
     expect(move.sudo).toBeNull();
-    expect(move.source).toBe("/tmp/modern/chromedriver-linux64/chromedriver");
+    expect(move.source).toBe(
+      path.join("/tmp/modern", "chromedriver-linux64", "chromedriver"),
+    );
     expect(move.dest).toBe(INSTALL_PATH);
   });
 });
