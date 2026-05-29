@@ -23,7 +23,11 @@ jobs:
       matrix:
         os: [ windows-latest, windows-2025, windows-2022 ]
         branch:
-          # - 'master'
+          # TEMPORARY parity gate (issue #159): run @master (current shell) and
+          # 'now' (new native TypeScript) side-by-side to prove behavioral
+          # parity across the OS matrix. Re-comment 'master' once the TS rewrite
+          # is confirmed stable and released.
+          - 'master'
           - 'now'
     steps:
     - uses: actions/checkout@v6
@@ -76,7 +80,11 @@ jobs:
       matrix:
         os: [ windows-latest, windows-2025, windows-2022 ]
         branch:
-          # - 'master'
+          # TEMPORARY parity gate (issue #159): run @master (current shell) and
+          # 'now' (new native TypeScript) side-by-side to prove behavioral
+          # parity across the OS matrix. Re-comment 'master' once the TS rewrite
+          # is confirmed stable and released.
+          - 'master'
           - 'now'
     steps:
     - uses: actions/checkout@v6
