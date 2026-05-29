@@ -25,27 +25,46 @@ jest path/to/test.ts
 
 ## Architecture
 
-The action follows this execution flow:
+The installation logic is implemented natively in TypeScript (no shell-out to
+`setup-chromedriver.sh` / `.ps1`). The action follows this execution flow:
 
-1. **Entry Point**: `dist/index.js` (packaged version of the compiled TypeScript)
-2. **Main Logic**: `src/setup-chromedriver.ts` - Determines the platform and executes the appropriate setup script
-3. **Platform-Specific Scripts**:
-   - Linux/macOS: `lib/setup-chromedriver.sh`
-   - Windows: `lib/setup-chromedriver.ps1`
+1. **Entry Point**: `dist/index.js` (the `ncc` bundle of the compiled TypeScript)
+2. **Main Logic**: `src/setup-chromedriver.ts` - reads inputs, detects the
+   platform/arch, then calls the appropriate native installer
+   (`installOnUnix` / `installOnWindows`)
+3. **Installer modules** (`src/installer/`):
+   - `http.ts` - `fetchText` / `fetchJson` via typed-rest-client (curl-like retry/fail/redirect)
+   - `download.ts` - `downloadAndExtractZip` via `@actions/tool-cache`
+   - `version.ts` - Chrome version detection + Chrome-for-Testing JSON resolution with fallback
+   - `unix.ts` - Linux/macOS install (apt dependency setup via `@actions/exec`, legacy/modern split)
+   - `windows.ts` - Windows install (FileVersion detection, legacy/modern split)
 
 ### Key Components
 
-- **src/setup-chromedriver.ts**: Main TypeScript file that:
+- **src/setup-chromedriver.ts**: Entry point that:
   - Reads input parameters (`chromedriver-version` and `chromeapp`)
-  - Detects the platform (win32, darwin, linux)
-  - Executes the appropriate shell script with parameters
+  - Detects the platform (win32, darwin, linux) and maps the arch
+  - Calls `installOnUnix` (Linux/macOS) or `installOnWindows` (Windows)
+- **src/chromedriver-helper.ts**: Pure helper functions (version parsing,
+  API/URL selection, JSON extraction, fallback, default paths) reused by the
+  installer modules. Covered by unit + shell-equivalence tests.
+- **src/installer/\*.ts**: The native installation layer described above.
+- **lib/setup-chromedriver.sh** / **lib/setup-chromedriver.ps1**: The legacy
+  shell/PowerShell implementations. These are **no longer on the execution
+  path** but are retained for one release cycle as an emergency rollback option.
 
-- **lib/setup-chromedriver.sh**: Bash script for Linux/macOS that handles downloading and installing ChromeDriver
-- **lib/setup-chromedriver.ps1**: PowerShell script for Windows ChromeDriver setup
+Behavioral parity with the original shell scripts is a hard requirement: install
+locations (`/usr/local/bin/chromedriver`, `C:\SeleniumWebDrivers\ChromeDriver`)
+are unchanged, and no `core.addPath` is added (the implicit PATH resolution via
+the well-known install directory is preserved).
 
 ### Build Process
 
-1. TypeScript compilation: `src/*.ts` → `lib/*.js`
-2. Packaging: `lib/setup-chromedriver.js` → `dist/index.js` (includes all dependencies)
+1. TypeScript compilation: `src/*.ts` → `lib/*.js` (`yarn build`, tsc)
+2. Packaging: `lib/setup-chromedriver.js` → `dist/index.js` (`yarn package`, ncc; includes all dependencies)
 
-The action uses GitHub Actions toolkit libraries (@actions/core, @actions/exec, etc.) for integration with the GitHub Actions environment.
+`lib/` and `dist/` are committed artifacts and must be kept in sync with `src/`:
+after changing any `src/**/*.ts`, re-run `yarn build` and `yarn package` and
+commit the regenerated `lib/` and `dist/index.js`.
+
+The action uses GitHub Actions toolkit libraries (@actions/core, @actions/exec, @actions/io, @actions/tool-cache, etc.) for integration with the GitHub Actions environment.
