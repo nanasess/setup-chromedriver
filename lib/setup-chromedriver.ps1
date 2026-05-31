@@ -3,6 +3,11 @@ Param(
     [string]$chromeapp
 )
 
+# Windows PowerShell 5.1's Invoke-WebRequest is drastically slowed by its
+# progress bar (it re-renders on every byte chunk), which makes the ChromeDriver
+# download take minutes in CI. Disabling it restores full-speed downloads.
+$ProgressPreference = 'SilentlyContinue'
+
 if([string]::IsNullOrEmpty($chromeapp))
 {
     $chromeapp = "C:\Program Files\Google\Chrome\Application\chrome.exe"
