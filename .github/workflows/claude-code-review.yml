@@ -34,7 +34,9 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git'
+          # Supply-chain hardening: pin the marketplace to a specific commit (anthropics/claude-code v2.1.158).
+          # Bump this SHA deliberately when updating the code-review plugin.
+          plugin_marketplaces: 'https://github.com/anthropics/claude-code.git#295dee881d0e1c1d0cd22fe171e4c1d07118fb04'
           plugins: 'code-review@claude-code-plugins'
           prompt: '/code-review:code-review ${{ github.repository }}/pull/${{ github.event.pull_request.number }}'
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
