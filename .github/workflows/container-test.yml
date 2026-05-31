@@ -1,6 +1,6 @@
 name: "Test chromedriver in containers"
 
-# Compatibility test for running the action inside a `container:` image.
+# Compatibility gate for running the action inside a `container:` image.
 #
 # Several issues report failures when the action is used from a container
 # (e.g. ruby / elixir / minimal Debian images) because those images lack the
@@ -10,23 +10,27 @@ name: "Test chromedriver in containers"
 #   - #243 (ruby:3.2.2):    fails because container dependencies are missing
 #
 # This workflow encodes the *documented workaround* (install the prerequisites
-# and Google Chrome up front) and proves that, with that workaround in place,
-# the action succeeds across common container images.
-#
-# The `ref` matrix axis exercises both implementations of the action:
-#   - `master`    : current shell-based implementation
-#   - `issue-159` : the native TypeScript rewrite (PR #446)
-#
-# `workflow_dispatch` is kept for on-demand runs once this lands on the default
-# branch. The scoped `push` trigger lets the workflow be validated from its own
-# feature branch (a workflow_dispatch-only workflow cannot be dispatched until
-# it exists on the default branch).
+# and Google Chrome up front, and pass `chromeapp: google-chrome-stable`) and
+# proves that, with that workaround in place, the action succeeds across common
+# container images. `uses: ./` exercises the action code of the current
+# commit, so it gates pushes / PRs the same way test.yml does.
 
 on:
-  workflow_dispatch:
   push:
     branches:
-      - "test/container-compatibility"
+      - "*"
+    tags:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  workflow_dispatch:
 
 jobs:
   container-test:
@@ -35,14 +39,11 @@ jobs:
       fail-fast: false
       matrix:
         image:
-          - "ruby:3.2.2"        # #243 reporter's image
-          - "ruby:latest"
+          - "ruby:3.2.2"        # #243 reporter's image (Debian bullseye)
+          - "ruby:latest"       # Debian bookworm (apt-key removed)
           - "elixir:slim"       # #32 reporter's image class
           - "node:slim"         # minimal Debian (no git/curl/gnupg by default)
           - "debian:stable-slim"
-        ref:
-          - "master"            # current shell-based implementation
-          - "issue-159"         # native TypeScript rewrite (PR #446)
     container:
       image: ${{ matrix.image }}
     steps:
@@ -77,12 +78,9 @@ jobs:
           apt-get update
           apt-get install -y google-chrome-stable
 
-      # Check out the requested ref so `uses: ./` exercises that version of the
-      # action code (`uses:` cannot take an expression for its path/ref).
+      # Check out the current commit so `uses: ./` exercises this revision of
+      # the action (gating pushes / PRs).
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
-        with:
-          repository: nanasess/setup-chromedriver
-          ref: ${{ matrix.ref }}
 
       # Pass the *package name we installed* (google-chrome-stable) as chromeapp.
       # The action runs `dpkg -s <chromeapp>` to decide whether Chrome is
@@ -102,8 +100,7 @@ jobs:
       - name: Verify
         env:
           IMAGE: ${{ matrix.image }}
-          REF: ${{ matrix.ref }}
         run: |
-          echo "Image: $IMAGE / ref: $REF"
+          echo "Image: $IMAGE"
           google-chrome-stable --version
           chromedriver --version
