@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
-import * as exec from "@actions/exec";
-import * as path from "path";
 import * as os from "os";
+import { installOnUnix } from "./installer/unix";
+import { installOnWindows } from "./installer/windows";
 
 async function run() {
   try {
@@ -27,17 +27,9 @@ async function run() {
         arch = "linux64";
     }
     if (arch == "win32") {
-      await exec.exec(
-        "powershell -File " + path.join(__dirname, "../lib", "setup-chromedriver.ps1 "), [
-        version,
-        chromeapp
-      ]);
+      await installOnWindows({ version, chromeapp });
     } else {
-      await exec.exec(path.join(__dirname, "../lib", "setup-chromedriver.sh"), [
-        version,
-        arch,
-        chromeapp,
-      ]);
+      await installOnUnix({ version, arch, chromeapp });
     }
   } catch (error: unknown) {
     if (error instanceof Error) {

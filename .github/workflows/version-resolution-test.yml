@@ -8,18 +8,19 @@ name: "Test ChromeDriver version resolution"
 #   - fallback: 131.0.6778.999  -> no exact match; the action falls back to the
 #     `major.minor.build` (version3) prefix and picks the last matching version
 #     (131.0.6778.87). This `version3` fallback branch is otherwise untested.
+#   - major-only: 131  -> the version3 fallback for an input with no minor/build.
+#     This is the regression the TypeScript rewrite (#446) guards against: the
+#     fallback mimics `cut -d '.' -f 1-3` (so "131" stays "131") instead of the
+#     strict 3-part parse that would throw. It also crashed the old PowerShell
+#     script on Windows (`"131".LastIndexOf('.')` is -1, so `Substring(0, -1)`
+#     threw); the native download path here is unaffected.
 #
 # Like legacy-test.yml, these are install-only: the version is pinned, so no
 # Chrome of a matching version is needed and no browser is launched. We only
 # assert that `chromedriver --version` reports the expected version.
 #
-# `uses: ./` exercises the action code of the current commit (shell version on
-# master, TypeScript version once merged into issue-159).
-#
-# NOTE: a major-only input (e.g. `131`) is intentionally NOT covered here -- it
-# crashes the master PowerShell script on Windows (`"131".LastIndexOf('.')` is
-# -1, so `Substring(0, -1)` throws). That edge is fixed by the TypeScript
-# rewrite (#446) and is tracked separately.
+# `uses: ./` exercises the action code of the current commit (the native
+# TypeScript implementation on this branch / on master after #446 merges).
 
 on:
   push:
@@ -62,6 +63,9 @@ jobs:
           # version3 fallback: nonexistent patch -> last 131.0.6778.* (87)
           - version: "131.0.6778.999"
             expect: "131.0.6778."
+          # major-only: version3 fallback for an input with no minor/build
+          - version: "131"
+            expect: "131."
     env:
       VERSION: ${{ matrix.case.version }}
       EXPECT: ${{ matrix.case.expect }}

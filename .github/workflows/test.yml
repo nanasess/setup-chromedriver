@@ -29,7 +29,11 @@ jobs:
           - macos-15
           - macos-14
         branch:
-          # - 'master'
+          # TEMPORARY parity gate (issue #159): run @master (current shell) and
+          # 'now' (new native TypeScript) side-by-side to prove behavioral
+          # parity across the OS matrix. Re-comment 'master' once the TS rewrite
+          # is confirmed stable and released.
+          - 'master'
           - 'now'
         chrome_version:
           - 'current'
@@ -93,7 +97,11 @@ jobs:
           - macos-15
           - macos-14
         branch:
-          # - 'master'
+          # TEMPORARY parity gate (issue #159): run @master (current shell) and
+          # 'now' (new native TypeScript) side-by-side to prove behavioral
+          # parity across the OS matrix. Re-comment 'master' once the TS rewrite
+          # is confirmed stable and released.
+          - 'master'
           - 'now'
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
