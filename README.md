@@ -80,6 +80,63 @@ steps:
       chromeapp: chrome-beta
 ```
 
+### Usage in a Container
+
+When a job runs inside a `container:` image (e.g. `ruby`, `elixir`, `node:slim`,
+`debian:slim`), the action **cannot install Google Chrome or the system
+prerequisites for you** — minimal images ship without `sudo`, `git`, `gnupg`,
+`unzip`, etc., and recent Debian releases (12 "bookworm" and later) no longer
+provide `apt-key`. You must prepare the container yourself before calling the
+action (see issues [#32](https://github.com/nanasess/setup-chromedriver/issues/32)
+and [#243](https://github.com/nanasess/setup-chromedriver/issues/243)).
+
+Three things are required:
+
+1. **Install the prerequisites _before_ `actions/checkout`** (checkout itself
+   needs `git`, which slim images do not ship):
+   `git sudo gnupg ca-certificates curl unzip jq wget`
+2. **Install Google Chrome yourself** using the modern `signed-by` keyring
+   scheme (the action's built-in Chrome install relies on the removed
+   `apt-key`).
+3. **Pass `chromeapp: google-chrome-stable`** — the action checks
+   `dpkg -s <chromeapp>`, so it must match the installed _package_ name
+   (`google-chrome-stable`), not the `google-chrome` binary alias. Otherwise the
+   check fails and the action falls back to the broken `apt-key` install path.
+
+```yaml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    container:
+      image: ruby:3.2.2
+    steps:
+      # 1. Prerequisites (must run before checkout, since checkout needs git)
+      - name: Install container prerequisites
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git sudo gnupg ca-certificates curl unzip jq wget
+
+      # 2. Install Google Chrome via the signed-by keyring scheme
+      - name: Install Google Chrome
+        run: |
+          wget -q -O- https://dl.google.com/linux/linux_signing_key.pub \
+            | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+            > /etc/apt/sources.list.d/google-chrome.list
+          apt-get update
+          apt-get install -y google-chrome-stable
+
+      - uses: actions/checkout@v4
+
+      # 3. Pass the installed package name as chromeapp
+      - uses: nanasess/setup-chromedriver@v2
+        with:
+          chromeapp: google-chrome-stable
+
+      - run: chromedriver --version
+```
+
 ## 🖥️ Platform Support
 
 | Platform    | Versions                                          |

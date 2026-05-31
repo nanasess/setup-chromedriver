@@ -1,0 +1,106 @@
+name: "Test chromedriver in containers"
+
+# Compatibility gate for running the action inside a `container:` image.
+#
+# Several issues report failures when the action is used from a container
+# (e.g. ruby / elixir / minimal Debian images) because those images lack the
+# prerequisites the action assumes on a GitHub-hosted runner:
+#
+#   - #32  (elixir:*-slim): `sudo: command not found`, and google-chrome missing
+#   - #243 (ruby:3.2.2):    fails because container dependencies are missing
+#
+# This workflow encodes the *documented workaround* (install the prerequisites
+# and Google Chrome up front, and pass `chromeapp: google-chrome-stable`) and
+# proves that, with that workaround in place, the action succeeds across common
+# container images. `uses: ./` exercises the action code of the current
+# commit, so it gates pushes / PRs the same way test.yml does.
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  workflow_dispatch:
+
+jobs:
+  container-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - "ruby:3.2.2"        # #243 reporter's image (Debian bullseye)
+          - "ruby:latest"       # Debian bookworm (apt-key removed)
+          - "elixir:slim"       # #32 reporter's image class
+          - "node:slim"         # minimal Debian (no git/curl/gnupg by default)
+          - "debian:stable-slim"
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      # ----------------------------------------------------------------------
+      # Workaround step 1: install the prerequisites the action assumes.
+      #
+      # These run BEFORE actions/checkout, because checkout needs `git`, which
+      # the *-slim images do not ship. The remaining packages (sudo, gnupg,
+      # curl, unzip, jq, wget, ca-certificates) cover both the shell and the
+      # TypeScript implementations of the action.
+      # ----------------------------------------------------------------------
+      - name: Install container prerequisites (workaround for #32 / #243)
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git sudo gnupg ca-certificates curl unzip jq wget
+
+      # ----------------------------------------------------------------------
+      # Workaround step 2: install Google Chrome.
+      #
+      # Containers do not ship google-chrome, so version auto-detection has
+      # nothing to read. Install the stable channel via the modern signed-by
+      # keyring scheme. (Recommends are kept on purpose so the runtime shared
+      # libraries Chrome needs are pulled in.)
+      # ----------------------------------------------------------------------
+      - name: Install Google Chrome
+        run: |
+          wget -q -O- https://dl.google.com/linux/linux_signing_key.pub \
+            | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+            > /etc/apt/sources.list.d/google-chrome.list
+          apt-get update
+          apt-get install -y google-chrome-stable
+
+      # Check out the current commit so `uses: ./` exercises this revision of
+      # the action (gating pushes / PRs).
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # Pass the *package name we installed* (google-chrome-stable) as chromeapp.
+      # The action runs `dpkg -s <chromeapp>` to decide whether Chrome is
+      # present; passing `google-chrome` (the binary alias, not the package
+      # name) makes that check fail and forces the action into its apt-key
+      # install path -- which is broken on Debian 12+ where `apt-key` is removed
+      # (the root cause of #243 for bookworm-based images). Matching the package
+      # name keeps the action on the "already installed" path.
+      - name: Run setup-chromedriver
+        uses: ./
+        with:
+          chromeapp: google-chrome-stable
+
+      # Smoke test: prove both binaries installed and are runnable inside the
+      # container. `--version` exercises the install path and shared-library
+      # availability without needing a display server.
+      - name: Verify
+        env:
+          IMAGE: ${{ matrix.image }}
+        run: |
+          echo "Image: $IMAGE"
+          google-chrome-stable --version
+          chromedriver --version
