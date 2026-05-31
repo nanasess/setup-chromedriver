@@ -1,0 +1,98 @@
+name: "Test chromedriver in containers"
+
+# Compatibility test for running the action inside a `container:` image.
+#
+# Several issues report failures when the action is used from a container
+# (e.g. ruby / elixir / minimal Debian images) because those images lack the
+# prerequisites the action assumes on a GitHub-hosted runner:
+#
+#   - #32  (elixir:*-slim): `sudo: command not found`, and google-chrome missing
+#   - #243 (ruby:3.2.2):    fails because container dependencies are missing
+#
+# This workflow encodes the *documented workaround* (install the prerequisites
+# and Google Chrome up front) and proves that, with that workaround in place,
+# the action succeeds across common container images.
+#
+# It is `workflow_dispatch`-only (on-demand) because it is comparatively slow
+# and runs against external package repositories. Use the `ref` input to pick
+# which version of the action to exercise:
+#   - `master`    : current shell-based implementation (default)
+#   - `issue-159` : the native TypeScript rewrite (PR #446)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Action ref to test (branch/tag), e.g. master or issue-159"
+        required: false
+        default: "master"
+
+jobs:
+  container-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - "ruby:3.2.2"        # #243 reporter's image
+          - "ruby:latest"
+          - "elixir:slim"       # #32 reporter's image class
+          - "node:slim"         # minimal Debian (no git/curl/gnupg by default)
+          - "debian:stable-slim"
+    container:
+      image: ${{ matrix.image }}
+    steps:
+      # ----------------------------------------------------------------------
+      # Workaround step 1: install the prerequisites the action assumes.
+      #
+      # These run BEFORE actions/checkout, because checkout needs `git`, which
+      # the *-slim images do not ship. The remaining packages (sudo, gnupg,
+      # curl, unzip, jq, wget, ca-certificates) cover both the shell and the
+      # TypeScript implementations of the action.
+      # ----------------------------------------------------------------------
+      - name: Install container prerequisites (workaround for #32 / #243)
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            git sudo gnupg ca-certificates curl unzip jq wget
+
+      # ----------------------------------------------------------------------
+      # Workaround step 2: install Google Chrome.
+      #
+      # Containers do not ship google-chrome, so version auto-detection has
+      # nothing to read. Install the stable channel via the modern signed-by
+      # keyring scheme. (Recommends are kept on purpose so the runtime shared
+      # libraries Chrome needs are pulled in.)
+      # ----------------------------------------------------------------------
+      - name: Install Google Chrome
+        run: |
+          wget -q -O- https://dl.google.com/linux/linux_signing_key.pub \
+            | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
+          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
+            > /etc/apt/sources.list.d/google-chrome.list
+          apt-get update
+          apt-get install -y google-chrome-stable
+
+      # Check out the requested ref so `uses: ./` exercises that version of the
+      # action code (`uses:` cannot take an expression for its path/ref).
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+        with:
+          repository: nanasess/setup-chromedriver
+          ref: ${{ inputs.ref }}
+
+      - name: Run setup-chromedriver
+        uses: ./
+        with:
+          chromeapp: google-chrome
+
+      # Smoke test: prove both binaries installed and are runnable inside the
+      # container. `--version` exercises the install path and shared-library
+      # availability without needing a display server.
+      - name: Verify
+        env:
+          IMAGE: ${{ matrix.image }}
+          REF: ${{ inputs.ref }}
+        run: |
+          echo "Image: $IMAGE / ref: $REF"
+          google-chrome --version
+          chromedriver --version
