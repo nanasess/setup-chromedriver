@@ -13,19 +13,20 @@ name: "Test chromedriver in containers"
 # and Google Chrome up front) and proves that, with that workaround in place,
 # the action succeeds across common container images.
 #
-# It is `workflow_dispatch`-only (on-demand) because it is comparatively slow
-# and runs against external package repositories. Use the `ref` input to pick
-# which version of the action to exercise:
-#   - `master`    : current shell-based implementation (default)
+# The `ref` matrix axis exercises both implementations of the action:
+#   - `master`    : current shell-based implementation
 #   - `issue-159` : the native TypeScript rewrite (PR #446)
+#
+# `workflow_dispatch` is kept for on-demand runs once this lands on the default
+# branch. The scoped `push` trigger lets the workflow be validated from its own
+# feature branch (a workflow_dispatch-only workflow cannot be dispatched until
+# it exists on the default branch).
 
 on:
   workflow_dispatch:
-    inputs:
-      ref:
-        description: "Action ref to test (branch/tag), e.g. master or issue-159"
-        required: false
-        default: "master"
+  push:
+    branches:
+      - "test/container-compatibility"
 
 jobs:
   container-test:
@@ -39,6 +40,9 @@ jobs:
           - "elixir:slim"       # #32 reporter's image class
           - "node:slim"         # minimal Debian (no git/curl/gnupg by default)
           - "debian:stable-slim"
+        ref:
+          - "master"            # current shell-based implementation
+          - "issue-159"         # native TypeScript rewrite (PR #446)
     container:
       image: ${{ matrix.image }}
     steps:
@@ -78,7 +82,7 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           repository: nanasess/setup-chromedriver
-          ref: ${{ inputs.ref }}
+          ref: ${{ matrix.ref }}
 
       - name: Run setup-chromedriver
         uses: ./
@@ -91,7 +95,7 @@ jobs:
       - name: Verify
         env:
           IMAGE: ${{ matrix.image }}
-          REF: ${{ inputs.ref }}
+          REF: ${{ matrix.ref }}
         run: |
           echo "Image: $IMAGE / ref: $REF"
           google-chrome --version
