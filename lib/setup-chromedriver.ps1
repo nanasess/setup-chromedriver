@@ -28,9 +28,9 @@ else
 
 if($chrome_majorversion -lt 115)
 {
-    $response = Invoke-WebRequest "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_$chrome_majorversion"
+    $response = Invoke-WebRequest "http://chromedriver.storage.googleapis.com/LATEST_RELEASE_$chrome_majorversion" -UseBasicParsing
     $version = $response.Content
-    Invoke-WebRequest "https://chromedriver.storage.googleapis.com/$version/chromedriver_win32.zip" -OutFile chromedriver_win32.zip
+    Invoke-WebRequest "https://chromedriver.storage.googleapis.com/$version/chromedriver_win32.zip" -OutFile chromedriver_win32.zip -UseBasicParsing
     Expand-Archive -Path chromedriver_win32.zip -DestinationPath C:\SeleniumWebDrivers\ChromeDriver -Force
     Remove-Item chromedriver_win32.zip
     Return 0
@@ -58,7 +58,7 @@ if (!$url)
 }
 Write-Output "Installing ChromeDriver $version for $arch"
 Write-Output "Downloading $url..."
-Invoke-WebRequest $url -OutFile chromedriver-win32.zip
+Invoke-WebRequest $url -OutFile chromedriver-win32.zip -UseBasicParsing
 Expand-Archive -Path chromedriver-win32.zip -Force
 Move-Item -Path .\chromedriver-win32\chromedriver-win32\chromedriver.exe -Destination C:\SeleniumWebDrivers\ChromeDriver -Force
 Remove-Item chromedriver-win32.zip
