@@ -1,0 +1,96 @@
+name: "Test ChromeDriver version resolution"
+
+# Install-only smoke tests for the modern (>= 115) version-resolution branches
+# that the OS matrix in test.yml does not exercise:
+#
+#   - boundary: 115.0.5790.170  -> exact match in the Chrome for Testing JSON
+#     (confirms the `< 115` legacy/modern split is exclusive at the boundary).
+#   - fallback: 131.0.6778.999  -> no exact match; the action falls back to the
+#     `major.minor.build` (version3) prefix and picks the last matching version
+#     (131.0.6778.87). This `version3` fallback branch is otherwise untested.
+#
+# Like legacy-test.yml, these are install-only: the version is pinned, so no
+# Chrome of a matching version is needed and no browser is launched. We only
+# assert that `chromedriver --version` reports the expected version.
+#
+# `uses: ./` exercises the action code of the current commit (shell version on
+# master, TypeScript version once merged into issue-159).
+#
+# NOTE: a major-only input (e.g. `131`) is intentionally NOT covered here -- it
+# crashes the master PowerShell script on Windows (`"131".LastIndexOf('.')` is
+# -1, so `Substring(0, -1)` throws). That edge is fixed by the TypeScript
+# rewrite (#446) and is tracked separately.
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  workflow_dispatch:
+
+jobs:
+  resolve:
+    name: "${{ matrix.os }} / ${{ matrix.case.version }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04
+          - ubuntu-22.04
+          - macos-latest
+          - macos-15
+          - macos-14
+          - windows-latest
+          - windows-2025
+          - windows-2022
+        case:
+          # modern boundary: first version above the <115 legacy split
+          - version: "115.0.5790.170"
+            expect: "115.0.5790.170"
+          # version3 fallback: nonexistent patch -> last 131.0.6778.* (87)
+          - version: "131.0.6778.999"
+            expect: "131.0.6778."
+    env:
+      VERSION: ${{ matrix.case.version }}
+      EXPECT: ${{ matrix.case.expect }}
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # Windows: the action reads the installed Chrome's FileVersion up front,
+      # so chromeapp must point at the pre-installed Chrome. (Left empty on
+      # Linux/macOS, where the action uses its platform default.)
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+      - uses: ./
+        with:
+          chromedriver-version: ${{ matrix.case.version }}
+          chromeapp: ${{ env.CHROMEAPP }}
+
+      - if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chromedriver --version
+          chromedriver --version | grep -F "$EXPECT"
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $out = chromedriver --version
+          Write-Output $out
+          if ($out -notmatch [regex]::Escape($Env:EXPECT)) {
+            Write-Error "Expected to contain '$Env:EXPECT', got: $out"
+            exit 1
+          }

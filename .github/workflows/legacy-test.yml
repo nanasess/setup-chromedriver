@@ -1,0 +1,92 @@
+name: "Test legacy ChromeDriver (<115)"
+
+# Install-only smoke test for the legacy ChromeDriver path (Chrome < 115),
+# which uses the old chromedriver.storage.googleapis.com API instead of the
+# Chrome for Testing JSON endpoints. See #229.
+#
+# Why install-only (no browser launch): the existing E2E (__tests__/chromedriver.ts)
+# starts a real browser session against the runner's *current* Chrome. A <115
+# driver cannot drive a modern Chrome ("only supports Chrome version N"), so
+# that E2E always fails for a pinned legacy version -- which is exactly why the
+# 114 matrix entry is commented out in test.yml (#229). This workflow instead
+# verifies what the action is actually responsible for: downloading and
+# installing the legacy binary, then reporting its version.
+#
+# `uses: ./` exercises the action code of the current commit (shell version on
+# master, TypeScript version once merged into issue-159).
+
+on:
+  push:
+    branches:
+      - "*"
+    tags:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  pull_request:
+    branches:
+      - "*"
+    paths:
+      - "**"
+      - "!*.md"
+  workflow_dispatch:
+
+jobs:
+  legacy:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04
+          - ubuntu-22.04
+          - macos-latest
+          - macos-15
+          - macos-14
+          - windows-latest
+          - windows-2025
+          - windows-2022
+    env:
+      # Chrome 114 is the last < 115 release; the action resolves this through
+      # the legacy chromedriver.storage.googleapis.com API.
+      LEGACY_VERSION: "114.0.5735.90"
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      # Windows: the action reads the installed Chrome's FileVersion up front,
+      # so chromeapp must point at the pre-installed Chrome even though the
+      # version is pinned. (Left empty on Linux/macOS, where the action falls
+      # back to its platform default.)
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+
+      # macOS (Apple Silicon): the legacy API has no mac-arm64 build, so the
+      # action installs the x64 (mac64) chromedriver. Rosetta 2 is required to
+      # run an x64 binary on arm runners.
+      - if: runner.os == 'macOS'
+        run: softwareupdate --install-rosetta --agree-to-license
+
+      - uses: ./
+        with:
+          chromedriver-version: ${{ env.LEGACY_VERSION }}
+          chromeapp: ${{ env.CHROMEAPP }}
+
+      # Install-only smoke: confirm the legacy binary is installed and reports
+      # the expected version. No browser is launched (see the header comment).
+      - if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          chromedriver --version
+          chromedriver --version | grep -F "$LEGACY_VERSION"
+      - if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $out = chromedriver --version
+          Write-Output $out
+          if ($out -notmatch [regex]::Escape($Env:LEGACY_VERSION)) {
+            Write-Error "Expected $Env:LEGACY_VERSION, got: $out"
+            exit 1
+          }
