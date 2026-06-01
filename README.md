@@ -37,10 +37,28 @@
 Add this step to your workflow to automatically set up ChromeDriver:
 
 ```yaml
-- uses: nanasess/setup-chromedriver@v2
+- uses: nanasess/setup-chromedriver@v3
 ```
 
 That's it! ChromeDriver will be installed and added to your PATH.
+
+> [!NOTE]
+> **Versioning** — `@v3` is the current major, a native TypeScript
+> reimplementation of the action. The public contract (inputs, install
+> locations, PATH behavior) is unchanged from `@v2`, so upgrading is a drop-in
+> replacement. `@v2` remains available as the previous, shell-based
+> implementation for existing workflows that prefer to stay pinned.
+
+> [!TIP]
+> **Supply-chain hardening** — moving tags like `@v3` can be repointed at any
+> time, so for security-sensitive workflows pin the action to a full-length
+> commit SHA instead. Keep the tag in a trailing comment for readability, and
+> let Dependabot/Renovate bump the SHA for you:
+>
+> ```yaml
+> # Pinned to a full commit SHA (recommended)
+> - uses: nanasess/setup-chromedriver@<full-commit-sha> # v3.0.0
+> ```
 
 ## 📖 Usage
 
@@ -51,7 +69,7 @@ The simplest way to use this action is without any parameters. It will automatic
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: nanasess/setup-chromedriver@v2
+  - uses: nanasess/setup-chromedriver@v3
   - run: chromedriver --version
 ```
 
@@ -62,7 +80,7 @@ If you need a specific version of ChromeDriver:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: nanasess/setup-chromedriver@v2
+  - uses: nanasess/setup-chromedriver@v3
     with:
       chromedriver-version: '131.0.6778.87'
   - run: chromedriver --version
@@ -75,7 +93,7 @@ If your Chrome binary has a custom name:
 ```yaml
 steps:
   - uses: actions/checkout@v4
-  - uses: nanasess/setup-chromedriver@v2
+  - uses: nanasess/setup-chromedriver@v3
     with:
       chromeapp: chrome-beta
 ```
@@ -130,7 +148,7 @@ jobs:
       - uses: actions/checkout@v4
 
       # 3. Pass the installed package name as chromeapp
-      - uses: nanasess/setup-chromedriver@v2
+      - uses: nanasess/setup-chromedriver@v3
         with:
           chromeapp: google-chrome-stable
 
@@ -168,7 +186,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: nanasess/setup-chromedriver@v2
+      - uses: nanasess/setup-chromedriver@v3
 
       - name: Start ChromeDriver
         run: |
@@ -192,7 +210,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: nanasess/setup-chromedriver@v2
+      - uses: nanasess/setup-chromedriver@v3
 
       - name: Start ChromeDriver
         run: chromedriver --url-base=/wd/hub &
@@ -216,7 +234,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: nanasess/setup-chromedriver@v2
+      - uses: nanasess/setup-chromedriver@v3
 
       - name: Run tests
         run: npm test
@@ -239,7 +257,7 @@ jobs:
         with:
           chrome-version: '131'
 
-      - uses: nanasess/setup-chromedriver@v2
+      - uses: nanasess/setup-chromedriver@v3
         with:
           chromedriver-version: '131.0.6778.87'
 
