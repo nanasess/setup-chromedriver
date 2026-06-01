@@ -1,0 +1,29 @@
+# pnpm settings (supply-chain hardening)
+# 単一パッケージでも pnpm の設定ファイルとして機能する。
+
+# 公開直後の新バージョンを採用しないクールダウン (分単位)。
+# 乗っ取り直後に公開された悪性バージョンの自動取り込みを防ぐ。4320 分 = 3 日。
+# 悪性版は公開後数時間〜数日で検知・yank される事が多いため 3 日確保する。
+# 緊急のセキュリティ修正を即時採用したい場合は minimumReleaseAgeExclude で
+# 対象パッケージを個別に除外できる。
+minimumReleaseAge: 4320
+
+# クールダウンの適用除外。
+# browserslist エコシステムのブラウザ互換データ群はほぼ毎日リリースされる
+# ため、3 日クールダウンだと解決のたびに窓内の最新版を掴んで CI の
+# --frozen-lockfile が失敗する (pnpm の minimumReleaseAge は古い版へ
+# 自動降格せず検証で弾く)。これらは dev 専用・データのみで dist には
+# 一切バンドルされない (公開される action に含まれない) ため、供給網
+# リスクが小さく除外する。
+minimumReleaseAgeExclude:
+  - baseline-browser-mapping
+  - caniuse-lite
+  - electron-to-chromium
+
+# インストール時ビルドスクリプト (postinstall 等) は pnpm 既定で全ブロックされる。
+# 各パッケージのビルド可否を明示する。原則 false (= 実行しない) を維持する。
+# unrs-resolver は jest のモジュール解決器。プリビルドバイナリ
+# (@unrs/resolver-binding-*) が optional dependency で入るためネイティブ
+# ビルドは不要 → false。
+allowBuilds:
+  unrs-resolver: false

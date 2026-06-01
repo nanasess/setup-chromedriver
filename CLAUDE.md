@@ -8,19 +8,25 @@ This is the setup-chromedriver GitHub Action repository that sets up ChromeDrive
 
 ## Commands
 
+This project uses **pnpm** (pinned via the `packageManager` field in
+`package.json`). Enable it with `corepack enable`. pnpm is chosen for
+supply-chain hardening: install-time build scripts are blocked by default
+(`allowBuilds` in `pnpm-workspace.yaml`) and freshly published versions are
+held back by a cooldown (`minimumReleaseAge`).
+
 ### Build and Development
-- `yarn install --frozen-lockfile` - Install dependencies
-- `yarn build` - Build TypeScript files (compiles src/ to lib/)
-- `yarn package` - Package the action using ncc (creates dist/index.js)
-- `yarn format` - Format code with Prettier
-- `yarn format-check` - Check code formatting
-- `yarn test` - Run Jest tests
+- `pnpm install --frozen-lockfile` - Install dependencies
+- `pnpm build` - Build TypeScript files (compiles src/ to lib/)
+- `pnpm package` - Package the action using ncc (creates dist/index.js)
+- `pnpm format` - Format code with Prettier
+- `pnpm format-check` - Check code formatting
+- `pnpm test` - Run Jest tests
 
 ### Running a Single Test
 ```bash
-yarn test path/to/test.ts
+pnpm test path/to/test.ts
 # or
-jest path/to/test.ts
+pnpm jest path/to/test.ts
 ```
 
 ## Architecture
@@ -60,11 +66,11 @@ the well-known install directory is preserved).
 
 ### Build Process
 
-1. TypeScript compilation: `src/*.ts` → `lib/*.js` (`yarn build`, tsc)
-2. Packaging: `lib/setup-chromedriver.js` → `dist/index.js` (`yarn package`, ncc; includes all dependencies)
+1. TypeScript compilation: `src/*.ts` → `lib/*.js` (`pnpm build`, tsc)
+2. Packaging: `lib/setup-chromedriver.js` → `dist/index.js` (`pnpm package`, ncc; includes all dependencies)
 
 `lib/` and `dist/` are committed artifacts and must be kept in sync with `src/`:
-after changing any `src/**/*.ts`, re-run `yarn build` and `yarn package` and
+after changing any `src/**/*.ts`, re-run `pnpm build` and `pnpm package` and
 commit the regenerated `lib/` and `dist/index.js`.
 
 The action uses GitHub Actions toolkit libraries (@actions/core, @actions/exec, @actions/io, @actions/tool-cache, etc.) for integration with the GitHub Actions environment.
