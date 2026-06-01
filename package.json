@@ -1,6 +1,5 @@
 {
   "name": "setup-chromedriver",
-  "version": "2.0.0",
   "private": true,
   "description": "setup-chromedriver",
   "type": "module",
