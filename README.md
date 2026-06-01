@@ -50,7 +50,7 @@ That's it! ChromeDriver will be installed and added to your PATH.
 > implementation for existing workflows that prefer to stay pinned.
 
 > [!TIP]
-> **Supply-chain hardening** — moving tags like `@v3` can be repointed at any
+> **Supply-chain hardening** — mutable tags like v3 can be repointed at any
 > time, so for security-sensitive workflows pin the action to a full-length
 > commit SHA instead. Keep the tag in a trailing comment for readability, and
 > let Dependabot/Renovate bump the SHA for you:
