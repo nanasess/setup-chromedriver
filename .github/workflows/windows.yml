@@ -37,7 +37,9 @@ jobs:
     - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
       with:
         node-version: 24
-        cache: pnpm
+        # fork PR ではキャッシュ汚染 (信頼境界の共有) を避けるため pnpm
+        # キャッシュを無効化する。自リポジトリの push / PR では有効のまま。
+        cache: ${{ github.event.pull_request.head.repo.fork != true && 'pnpm' || '' }}
     - run: pnpm install --frozen-lockfile
     - run: pnpm build
     - run: pnpm package
@@ -99,7 +101,9 @@ jobs:
     - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
       with:
         node-version: 24
-        cache: pnpm
+        # fork PR ではキャッシュ汚染 (信頼境界の共有) を避けるため pnpm
+        # キャッシュを無効化する。自リポジトリの push / PR では有効のまま。
+        cache: ${{ github.event.pull_request.head.repo.fork != true && 'pnpm' || '' }}
     - run: pnpm install --frozen-lockfile
     - run: pnpm build
     - run: pnpm package
