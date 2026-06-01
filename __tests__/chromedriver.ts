@@ -1,5 +1,7 @@
 import { Builder, Capabilities, until } from "selenium-webdriver";
-import * as chrome from "selenium-webdriver/chrome";
+// ESM (the project is "type":"module") requires an explicit extension for this
+// CJS subpath; without it Node throws ERR_MODULE_NOT_FOUND under ts-node.
+import * as chrome from "selenium-webdriver/chrome.js";
 
 (async () => {
   const timeout = 30000;
