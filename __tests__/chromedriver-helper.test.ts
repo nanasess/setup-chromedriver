@@ -11,7 +11,7 @@ import {
   findFallbackVersion,
   getDefaultChromePath,
   getInstallPath,
-} from "../src/chromedriver-helper";
+} from "../src/chromedriver-helper.js";
 
 // ---------------------------------------------------------------------------
 // Mock API response fixture

@@ -5,12 +5,13 @@
  * Run with: RUN_CHROMEDRIVER_API_TESTS=1 pnpm test __tests__/chromedriver-api.test.ts
  */
 
+import { jest } from "@jest/globals";
 import {
   buildLegacyLatestReleaseUrl,
   extractDriverUrlFromJson,
   ChromeKnownGoodVersions,
   ChromeVersion,
-} from "../src/chromedriver-helper";
+} from "../src/chromedriver-helper.js";
 
 const JSON_URL =
   "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json";

@@ -7,6 +7,7 @@
 
 import { execSync } from "child_process";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import {
   parseMajorVersion,
   parseVersion3,
@@ -19,7 +20,10 @@ import {
   getInstallPath,
   extractDriverUrlFromJson,
   findFallbackVersion,
-} from "../src/chromedriver-helper";
+} from "../src/chromedriver-helper.js";
+
+// ESM has no __dirname; derive this file's directory from import.meta.url.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Run shell script and parse output

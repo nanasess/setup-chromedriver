@@ -13,33 +13,40 @@
  *   - the binary is installed to `C:\SeleniumWebDrivers\ChromeDriver`.
  */
 
+import { jest } from "@jest/globals";
 import * as path from "path";
 
-import * as io from "@actions/io";
-import { installOnWindows } from "../src/installer/windows";
-import { downloadAndExtractZip } from "../src/installer/download";
-import {
-  detectFullChromeVersion,
-  resolveLegacyVersion,
-  resolveModernDownload,
-} from "../src/installer/version";
+jest.unstable_mockModule("@actions/io", () => ({
+  which: jest.fn(),
+  cp: jest.fn(),
+  mkdirP: jest.fn(),
+  mv: jest.fn(),
+}));
+jest.unstable_mockModule("../src/installer/download.js", () => ({
+  downloadAndExtractZip: jest.fn(),
+}));
+jest.unstable_mockModule("../src/installer/version.js", () => ({
+  detectFullChromeVersion: jest.fn(),
+  resolveLegacyVersion: jest.fn(),
+  resolveModernDownload: jest.fn(),
+}));
 
-jest.mock("@actions/io");
-jest.mock("../src/installer/download");
-jest.mock("../src/installer/version");
+const io = await import("@actions/io");
+const { installOnWindows } = await import("../src/installer/windows.js");
+const downloadMod = await import("../src/installer/download.js");
+const versionMod = await import("../src/installer/version.js");
 
-const mockedIo = io as jest.Mocked<typeof io>;
-const mockedDownloadAndExtractZip =
-  downloadAndExtractZip as jest.MockedFunction<typeof downloadAndExtractZip>;
-const mockedDetectFullChromeVersion =
-  detectFullChromeVersion as jest.MockedFunction<
-    typeof detectFullChromeVersion
-  >;
-const mockedResolveLegacyVersion = resolveLegacyVersion as jest.MockedFunction<
-  typeof resolveLegacyVersion
->;
-const mockedResolveModernDownload =
-  resolveModernDownload as jest.MockedFunction<typeof resolveModernDownload>;
+const mockedIo = jest.mocked(io);
+const mockedDownloadAndExtractZip = jest.mocked(
+  downloadMod.downloadAndExtractZip,
+);
+const mockedDetectFullChromeVersion = jest.mocked(
+  versionMod.detectFullChromeVersion,
+);
+const mockedResolveLegacyVersion = jest.mocked(versionMod.resolveLegacyVersion);
+const mockedResolveModernDownload = jest.mocked(
+  versionMod.resolveModernDownload,
+);
 
 const INSTALL_PATH = "C:\\SeleniumWebDrivers\\ChromeDriver";
 const DEFAULT_CHROME_PATH =

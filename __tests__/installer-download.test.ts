@@ -2,14 +2,23 @@
  * Unit tests for src/installer/download.ts.
  *
  * @actions/tool-cache is mocked so no real network or filesystem I/O occurs.
+ *
+ * The project is ESM, so the mock is registered with
+ * `jest.unstable_mockModule` and both the mocked module and the module under
+ * test are pulled in with dynamic `import()` *after* the mock is in place.
  */
 
-import * as tc from "@actions/tool-cache";
-import { downloadAndExtractZip } from "../src/installer/download";
+import { jest } from "@jest/globals";
 
-jest.mock("@actions/tool-cache");
+jest.unstable_mockModule("@actions/tool-cache", () => ({
+  downloadTool: jest.fn(),
+  extractZip: jest.fn(),
+}));
 
-const mockedTc = tc as jest.Mocked<typeof tc>;
+const tc = await import("@actions/tool-cache");
+const { downloadAndExtractZip } = await import("../src/installer/download.js");
+
+const mockedTc = jest.mocked(tc);
 
 describe("downloadAndExtractZip", () => {
   beforeEach(() => {

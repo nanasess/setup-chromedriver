@@ -12,7 +12,7 @@
  *                    10 times with a backoff between attempts
  */
 
-import * as httpm from "typed-rest-client/HttpClient";
+import * as httpm from "typed-rest-client/HttpClient.js";
 
 const USER_AGENT = "setup-chromedriver";
 

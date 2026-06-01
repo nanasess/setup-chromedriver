@@ -1,7 +1,7 @@
 import * as core from "@actions/core";
 import * as os from "os";
-import { installOnUnix } from "./installer/unix";
-import { installOnWindows } from "./installer/windows";
+import { installOnUnix } from "./installer/unix.js";
+import { installOnWindows } from "./installer/windows.js";
 
 async function run() {
   try {
