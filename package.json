@@ -10,7 +10,7 @@
     "package": "ncc build lib/setup-chromedriver.js --source-map --license licenses.txt",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
-    "test": "NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "repository": {
     "type": "git",
