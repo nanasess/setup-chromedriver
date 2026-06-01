@@ -39,7 +39,7 @@ export function isLegacyVersion(majorVersion: number): boolean {
 
 export function mapArchitecture(
   platform: NodeJS.Platform,
-  arch: string
+  arch: string,
 ): string {
   switch (platform) {
     case "win32":
@@ -104,22 +104,20 @@ export interface ChromeKnownGoodVersions {
 export function extractDriverUrlFromJson(
   json: ChromeKnownGoodVersions,
   version: string,
-  platform: string
+  platform: string,
 ): string | null {
   const entry = json.versions.find((v) => v.version === version);
   const chromedrivers = entry?.downloads?.chromedriver;
   if (!chromedrivers) {
     return null;
   }
-  const download = chromedrivers.find(
-    (d) => d.platform === platform
-  );
+  const download = chromedrivers.find((d) => d.platform === platform);
   return download?.url ?? null;
 }
 
 export function findFallbackVersion(
   json: ChromeKnownGoodVersions,
-  version3: string
+  version3: string,
 ): string | null {
   const prefix = version3 + ".";
   const matches = json.versions.filter((v) => v.version.startsWith(prefix));

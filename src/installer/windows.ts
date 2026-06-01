@@ -32,13 +32,13 @@ import {
   getInstallPath,
   isLegacyVersion,
   parseMajorVersion,
-} from "../chromedriver-helper";
-import { downloadAndExtractZip } from "./download";
+} from "../chromedriver-helper.js";
+import { downloadAndExtractZip } from "./download.js";
 import {
   detectFullChromeVersion,
   resolveLegacyVersion,
   resolveModernDownload,
-} from "./version";
+} from "./version.js";
 
 export async function installOnWindows(opts: {
   version: string;

@@ -1,19 +1,23 @@
-import * as exec from "@actions/exec";
+import { jest } from "@jest/globals";
+import type { ExecOptions } from "@actions/exec";
+import type { ChromeKnownGoodVersions } from "../src/chromedriver-helper.js";
 
-import {
-  detectFullChromeVersion,
-  resolveLegacyVersion,
-  resolveModernDownload,
-} from "../src/installer/version";
-import { fetchJson, fetchText } from "../src/installer/http";
-import { ChromeKnownGoodVersions } from "../src/chromedriver-helper";
+jest.unstable_mockModule("@actions/exec", () => ({
+  exec: jest.fn(),
+}));
+jest.unstable_mockModule("../src/installer/http.js", () => ({
+  fetchJson: jest.fn(),
+  fetchText: jest.fn(),
+}));
 
-jest.mock("@actions/exec");
-jest.mock("../src/installer/http");
+const exec = await import("@actions/exec");
+const { detectFullChromeVersion, resolveLegacyVersion, resolveModernDownload } =
+  await import("../src/installer/version.js");
+const { fetchJson, fetchText } = await import("../src/installer/http.js");
 
-const mockedExec = exec.exec as jest.MockedFunction<typeof exec.exec>;
-const mockedFetchJson = fetchJson as jest.MockedFunction<typeof fetchJson>;
-const mockedFetchText = fetchText as jest.MockedFunction<typeof fetchText>;
+const mockedExec = jest.mocked(exec.exec);
+const mockedFetchJson = jest.mocked(fetchJson);
+const mockedFetchText = jest.mocked(fetchText);
 
 // ---------------------------------------------------------------------------
 // Mock Chrome-for-Testing JSON fixture
@@ -59,7 +63,7 @@ const JSON_URL =
  */
 function execWithStdout(output: string): typeof mockedExec {
   return mockedExec.mockImplementation(
-    async (_cmd: string, _args?: string[], options?: exec.ExecOptions) => {
+    async (_cmd: string, _args?: string[], options?: ExecOptions) => {
       options?.listeners?.stdout?.(Buffer.from(output));
       return 0;
     },
@@ -149,7 +153,7 @@ describe("detectFullChromeVersion", () => {
 
   it("accumulates stdout emitted across multiple chunks", async () => {
     mockedExec.mockImplementation(
-      async (_cmd: string, _args?: string[], options?: exec.ExecOptions) => {
+      async (_cmd: string, _args?: string[], options?: ExecOptions) => {
         options?.listeners?.stdout?.(Buffer.from("Google Chrome "));
         options?.listeners?.stdout?.(Buffer.from("131.0.6778.204\n"));
         return 0;

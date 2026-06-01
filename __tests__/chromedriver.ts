@@ -1,38 +1,41 @@
 import { Builder, Capabilities, until } from "selenium-webdriver";
-import * as chrome from "selenium-webdriver/chrome";
+// ESM (the project is "type":"module") requires an explicit extension for this
+// CJS subpath; without it Node throws ERR_MODULE_NOT_FOUND under ts-node.
+import * as chrome from "selenium-webdriver/chrome.js";
 
 (async () => {
   const timeout = 30000;
-  
+
   // Chrome options for better compatibility, especially on macOS
   const options = new chrome.Options();
   options.addArguments(
-    '--no-sandbox',
-    '--disable-dev-shm-usage',
-    '--disable-gpu',
-    '--disable-web-security',
-    '--disable-features=VizDisplayCompositor',
-    '--remote-debugging-port=9222',
-    '--disable-background-timer-throttling',
-    '--disable-backgrounding-occluded-windows',
-    '--disable-renderer-backgrounding'
+    "--no-sandbox",
+    "--disable-dev-shm-usage",
+    "--disable-gpu",
+    "--disable-web-security",
+    "--disable-features=VizDisplayCompositor",
+    "--remote-debugging-port=9222",
+    "--disable-background-timer-throttling",
+    "--disable-backgrounding-occluded-windows",
+    "--disable-renderer-backgrounding",
   );
-  
+
   // Add headless mode for CI environments
   if (process.env.CI) {
-    options.addArguments('--headless=new');
+    options.addArguments("--headless=new");
   }
-  
+
   // Set a custom user data directory to avoid permission issues
-  const userDataDir = process.platform === 'darwin' 
-    ? '/tmp/chrome-user-data-' + Date.now()
-    : undefined;
+  const userDataDir =
+    process.platform === "darwin"
+      ? "/tmp/chrome-user-data-" + Date.now()
+      : undefined;
   if (userDataDir) {
     options.addArguments(`--user-data-dir=${userDataDir}`);
   }
-  
+
   const driver = new Builder()
-    .forBrowser('chrome')
+    .forBrowser("chrome")
     .setChromeOptions(options)
     .build();
   try {

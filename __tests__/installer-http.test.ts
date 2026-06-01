@@ -13,18 +13,21 @@
  * typed-rest-client is mocked so no real network I/O occurs.
  */
 
+import { jest } from "@jest/globals";
+
 // Shared mock for the HttpClient instance method `get`. The module under test
 // constructs a single client at load time, so the constructor mock must return
-// an object backed by this shared mock.
-const mockGet = jest.fn();
+// an object backed by this shared mock. Declared before the mock factory so it
+// is captured by the closure when `await import()` evaluates http.ts.
+const mockGet = jest.fn() as jest.Mock<(url: string) => Promise<unknown>>;
 
-jest.mock("typed-rest-client/HttpClient", () => ({
+jest.unstable_mockModule("typed-rest-client/HttpClient.js", () => ({
   HttpClient: jest.fn().mockImplementation(() => ({
     get: mockGet,
   })),
 }));
 
-import { fetchText, fetchJson } from "../src/installer/http";
+const { fetchText, fetchJson } = await import("../src/installer/http.js");
 
 /**
  * Build a fake typed-rest-client response with the given status code and body.
@@ -33,7 +36,7 @@ import { fetchText, fetchJson } from "../src/installer/http";
 function makeResponse(statusCode: number, body: string) {
   return {
     message: { statusCode },
-    readBody: jest.fn().mockResolvedValue(body),
+    readBody: jest.fn(() => Promise.resolve(body)),
   };
 }
 

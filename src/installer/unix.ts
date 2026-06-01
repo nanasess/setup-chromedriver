@@ -29,13 +29,13 @@ import {
   getInstallPath,
   parseMajorVersion,
   isLegacyVersion,
-} from "../chromedriver-helper";
-import { downloadAndExtractZip } from "./download";
+} from "../chromedriver-helper.js";
+import { downloadAndExtractZip } from "./download.js";
 import {
   detectFullChromeVersion,
   resolveLegacyVersion,
   resolveModernDownload,
-} from "./version";
+} from "./version.js";
 
 interface InstallOnUnixOptions {
   version: string;

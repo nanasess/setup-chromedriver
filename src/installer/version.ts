@@ -23,8 +23,8 @@ import {
   buildLegacyLatestReleaseUrl,
   extractDriverUrlFromJson,
   findFallbackVersion,
-} from "../chromedriver-helper";
-import { fetchJson, fetchText } from "./http";
+} from "../chromedriver-helper.js";
+import { fetchJson, fetchText } from "./http.js";
 
 // Chrome-for-Testing known-good-versions endpoint (modern, >=115).
 const JSON_URL =

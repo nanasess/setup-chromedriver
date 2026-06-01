@@ -12,39 +12,47 @@
  *   - sudo present vs absent in the `mv` command
  */
 
-import * as exec from "@actions/exec";
-import * as io from "@actions/io";
+import { jest } from "@jest/globals";
 import * as path from "path";
+import type { ExecOptions } from "@actions/exec";
+import { getInstallPath } from "../src/chromedriver-helper.js";
 
-import { installOnUnix } from "../src/installer/unix";
-import { downloadAndExtractZip as _downloadAndExtractZip } from "../src/installer/download";
-import {
-  detectFullChromeVersion as _detectFullChromeVersion,
-  resolveLegacyVersion as _resolveLegacyVersion,
-  resolveModernDownload as _resolveModernDownload,
-} from "../src/installer/version";
-import { getInstallPath } from "../src/chromedriver-helper";
+jest.unstable_mockModule("@actions/exec", () => ({
+  exec: jest.fn(),
+}));
+jest.unstable_mockModule("@actions/io", () => ({
+  which: jest.fn(),
+  cp: jest.fn(),
+  mkdirP: jest.fn(),
+  mv: jest.fn(),
+}));
+jest.unstable_mockModule("@actions/core", () => ({
+  addPath: jest.fn(),
+  getInput: jest.fn(),
+  info: jest.fn(),
+  setFailed: jest.fn(),
+}));
+jest.unstable_mockModule("../src/installer/download.js", () => ({
+  downloadAndExtractZip: jest.fn(),
+}));
+jest.unstable_mockModule("../src/installer/version.js", () => ({
+  detectFullChromeVersion: jest.fn(),
+  resolveLegacyVersion: jest.fn(),
+  resolveModernDownload: jest.fn(),
+}));
 
-jest.mock("@actions/exec");
-jest.mock("@actions/io");
-jest.mock("@actions/core");
-jest.mock("../src/installer/download");
-jest.mock("../src/installer/version");
+const exec = await import("@actions/exec");
+const io = await import("@actions/io");
+const { installOnUnix } = await import("../src/installer/unix.js");
+const downloadMod = await import("../src/installer/download.js");
+const versionMod = await import("../src/installer/version.js");
 
-const execMock = exec.exec as jest.MockedFunction<typeof exec.exec>;
-const whichMock = io.which as jest.MockedFunction<typeof io.which>;
-const downloadAndExtractZip = _downloadAndExtractZip as jest.MockedFunction<
-  typeof _downloadAndExtractZip
->;
-const detectFullChromeVersion = _detectFullChromeVersion as jest.MockedFunction<
-  typeof _detectFullChromeVersion
->;
-const resolveLegacyVersion = _resolveLegacyVersion as jest.MockedFunction<
-  typeof _resolveLegacyVersion
->;
-const resolveModernDownload = _resolveModernDownload as jest.MockedFunction<
-  typeof _resolveModernDownload
->;
+const execMock = jest.mocked(exec.exec);
+const whichMock = jest.mocked(io.which);
+const downloadAndExtractZip = jest.mocked(downloadMod.downloadAndExtractZip);
+const detectFullChromeVersion = jest.mocked(versionMod.detectFullChromeVersion);
+const resolveLegacyVersion = jest.mocked(versionMod.resolveLegacyVersion);
+const resolveModernDownload = jest.mocked(versionMod.resolveModernDownload);
 
 // The install path is derived from process.platform at runtime. Compute the
 // expected value the same way the implementation does so the test is valid
@@ -70,12 +78,12 @@ function setPresentCommands(present: string[]): void {
 function execCalls(): Array<{
   command: string;
   args: string[];
-  options?: exec.ExecOptions;
+  options?: ExecOptions;
 }> {
   return execMock.mock.calls.map((call) => ({
     command: call[0],
     args: (call[1] as string[]) ?? [],
-    options: call[2] as exec.ExecOptions | undefined,
+    options: call[2] as ExecOptions | undefined,
   }));
 }
 

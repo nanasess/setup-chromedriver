@@ -5,12 +5,13 @@
  * Run with: RUN_CHROMEDRIVER_API_TESTS=1 pnpm test __tests__/chromedriver-api.test.ts
  */
 
+import { jest } from "@jest/globals";
 import {
   buildLegacyLatestReleaseUrl,
   extractDriverUrlFromJson,
   ChromeKnownGoodVersions,
   ChromeVersion,
-} from "../src/chromedriver-helper";
+} from "../src/chromedriver-helper.js";
 
 const JSON_URL =
   "https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json";
@@ -47,14 +48,15 @@ describeIfIntegration("Chrome for Testing JSON API", () => {
   it("can extract a chromedriver URL from a recent version", () => {
     // Find a version that has chromedriver downloads
     const withDriver = json.versions.find(
-      (v: ChromeVersion) => v.downloads.chromedriver && v.downloads.chromedriver.length > 0
+      (v: ChromeVersion) =>
+        v.downloads.chromedriver && v.downloads.chromedriver.length > 0,
     );
     expect(withDriver).toBeDefined();
 
     const url = extractDriverUrlFromJson(
       json,
       withDriver!.version,
-      withDriver!.downloads.chromedriver![0].platform
+      withDriver!.downloads.chromedriver![0].platform,
     );
     expect(url).not.toBeNull();
     expect(url).toMatch(/^https:\/\//);

@@ -7,6 +7,7 @@
 
 import { execSync } from "child_process";
 import * as path from "path";
+import { fileURLToPath } from "url";
 import {
   parseMajorVersion,
   parseVersion3,
@@ -19,7 +20,10 @@ import {
   getInstallPath,
   extractDriverUrlFromJson,
   findFallbackVersion,
-} from "../src/chromedriver-helper";
+} from "../src/chromedriver-helper.js";
+
+// ESM has no __dirname; derive this file's directory from import.meta.url.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // ---------------------------------------------------------------------------
 // Run shell script and parse output
@@ -164,7 +168,7 @@ describe("Shell ↔ TypeScript equivalence", () => {
       for (const line of lines) {
         const kv = parseKeyValue(line);
         expect(buildLegacyDownloadUrl(kv["VERSION"], kv["ARCH"])).toBe(
-          kv["URL"]
+          kv["URL"],
         );
       }
     });
@@ -175,9 +179,9 @@ describe("Shell ↔ TypeScript equivalence", () => {
       const lines = parseSection(shellOutput, "DEFAULT_CHROME_PATH");
       for (const line of lines) {
         const kv = parseKeyValue(line);
-        expect(
-          getDefaultChromePath(kv["PLATFORM"] as NodeJS.Platform)
-        ).toBe(kv["PATH"]);
+        expect(getDefaultChromePath(kv["PLATFORM"] as NodeJS.Platform)).toBe(
+          kv["PATH"],
+        );
       }
     });
   });
@@ -188,7 +192,7 @@ describe("Shell ↔ TypeScript equivalence", () => {
       for (const line of lines) {
         const kv = parseKeyValue(line);
         expect(getInstallPath(kv["PLATFORM"] as NodeJS.Platform)).toBe(
-          kv["PATH"]
+          kv["PATH"],
         );
       }
     });
@@ -202,7 +206,7 @@ describe("Shell ↔ TypeScript equivalence", () => {
         const result = extractDriverUrlFromJson(
           TEST_JSON,
           kv["VERSION"],
-          kv["PLATFORM"]
+          kv["PLATFORM"],
         );
         const expected = kv["URL"] === "null" ? null : kv["URL"];
         expect(result).toBe(expected);
