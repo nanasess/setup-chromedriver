@@ -27,3 +27,11 @@ minimumReleaseAgeExclude:
 # ビルドは不要 → false。
 allowBuilds:
   unrs-resolver: false
+
+# 推移的依存のバージョン強制 (セキュリティ修正)。
+# qs: typed-rest-client が qs@6.15.1 をピン留めしており、修正版 6.15.2 を
+# 使う上流が存在しない (最新の typed-rest-client@3.0.0 も 6.15.1 固定)。
+# GHSA-q8mj-m7cp-5q26 (qs.stringify の DoS, 脆弱 <=6.15.1 / 修正 >=6.15.2)
+# を塞ぐため override で 6.15.2 以上へ引き上げる。patch 上げで API 互換。
+overrides:
+  qs: '>=6.15.2'
