@@ -38,7 +38,6 @@
     "@types/semver": "^7.7.1",
     "@types/yauzl": "^2.10.3",
     "@vercel/ncc": "^0.38.4",
-    "husky": "^9.1.7",
     "jest": "^30.3.0",
     "jest-circus": "^30.3.0",
     "prettier": "^3.8.1",
@@ -47,12 +46,5 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
   },
-  "husky": {
-    "skipCI": true,
-    "hooks": {
-      "pre-commit": "npm run build && npm run format",
-      "post-commit": "npm prune --production && git add node_modules/* && git commit -m \"Husky commit correct node modules\""
-    }
-  },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "pnpm@11.5.0+sha512.dbfcc4f81cf48597afd4bc391ffdf12c11f1a9fb83a395bfa6b0a2d9cc2fd8ffebafdb1ccbd529632153f793904c2615b7f09fe1a345473fd1c35845172a8eb1"
 }

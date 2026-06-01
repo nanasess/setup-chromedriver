@@ -2,7 +2,7 @@
  * API integration tests for Chrome for Testing endpoints.
  * These tests hit real network endpoints and should be run in CI.
  *
- * Run with: RUN_CHROMEDRIVER_API_TESTS=1 yarn test __tests__/chromedriver-api.test.ts
+ * Run with: RUN_CHROMEDRIVER_API_TESTS=1 pnpm test __tests__/chromedriver-api.test.ts
  */
 
 import {

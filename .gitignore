@@ -3,6 +3,9 @@ __tests__/runner/*
 # comment out in distribution branches
 node_modules/
 
+# pnpm
+.pnpm-store/
+
 # Rest pulled from https://github.com/github/gitignore/blob/master/Node.gitignore
 # Logs
 logs

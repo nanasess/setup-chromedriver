@@ -272,7 +272,7 @@ Contributions are welcome! Here's how you can help:
 1. 🍴 Fork the repository
 2. 🔧 Create your feature branch (`git checkout -b feature/amazing-feature`)
 3. 💻 Make your changes
-4. ✅ Run tests with `yarn test`
+4. ✅ Run tests with `pnpm test`
 5. 📝 Commit your changes (`git commit -m 'Add amazing feature'`)
 6. 📤 Push to the branch (`git push origin feature/amazing-feature`)
 7. 🔄 Open a Pull Request
@@ -280,18 +280,21 @@ Contributions are welcome! Here's how you can help:
 ### Development Setup
 
 ```bash
+# Enable pnpm via Corepack (uses the version pinned in package.json)
+corepack enable
+
 # Install dependencies
-yarn install --frozen-lockfile
+pnpm install --frozen-lockfile
 
 # Build the action
-yarn build
-yarn package
+pnpm build
+pnpm package
 
 # Run tests
-yarn test
+pnpm test
 
 # Format code
-yarn format
+pnpm format
 ```
 
 For more details on the architecture and development process, see [CLAUDE.md](./CLAUDE.md).
