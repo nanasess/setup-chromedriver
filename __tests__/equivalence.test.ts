@@ -168,7 +168,7 @@ describe("Shell ↔ TypeScript equivalence", () => {
       for (const line of lines) {
         const kv = parseKeyValue(line);
         expect(buildLegacyDownloadUrl(kv["VERSION"], kv["ARCH"])).toBe(
-          kv["URL"]
+          kv["URL"],
         );
       }
     });
@@ -179,9 +179,9 @@ describe("Shell ↔ TypeScript equivalence", () => {
       const lines = parseSection(shellOutput, "DEFAULT_CHROME_PATH");
       for (const line of lines) {
         const kv = parseKeyValue(line);
-        expect(
-          getDefaultChromePath(kv["PLATFORM"] as NodeJS.Platform)
-        ).toBe(kv["PATH"]);
+        expect(getDefaultChromePath(kv["PLATFORM"] as NodeJS.Platform)).toBe(
+          kv["PATH"],
+        );
       }
     });
   });
@@ -192,7 +192,7 @@ describe("Shell ↔ TypeScript equivalence", () => {
       for (const line of lines) {
         const kv = parseKeyValue(line);
         expect(getInstallPath(kv["PLATFORM"] as NodeJS.Platform)).toBe(
-          kv["PATH"]
+          kv["PATH"],
         );
       }
     });
@@ -206,7 +206,7 @@ describe("Shell ↔ TypeScript equivalence", () => {
         const result = extractDriverUrlFromJson(
           TEST_JSON,
           kv["VERSION"],
-          kv["PLATFORM"]
+          kv["PLATFORM"],
         );
         const expected = kv["URL"] === "null" ? null : kv["URL"];
         expect(result).toBe(expected);

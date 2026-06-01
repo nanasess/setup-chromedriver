@@ -48,14 +48,15 @@ describeIfIntegration("Chrome for Testing JSON API", () => {
   it("can extract a chromedriver URL from a recent version", () => {
     // Find a version that has chromedriver downloads
     const withDriver = json.versions.find(
-      (v: ChromeVersion) => v.downloads.chromedriver && v.downloads.chromedriver.length > 0
+      (v: ChromeVersion) =>
+        v.downloads.chromedriver && v.downloads.chromedriver.length > 0,
     );
     expect(withDriver).toBeDefined();
 
     const url = extractDriverUrlFromJson(
       json,
       withDriver!.version,
-      withDriver!.downloads.chromedriver![0].platform
+      withDriver!.downloads.chromedriver![0].platform,
     );
     expect(url).not.toBeNull();
     expect(url).toMatch(/^https:\/\//);

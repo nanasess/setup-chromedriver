@@ -106,7 +106,7 @@ describe("parseVersion3", () => {
 
   it("throws when version has fewer than 3 parts", () => {
     expect(() => parseVersion3("115.0")).toThrow(
-      "Version must have at least 3 parts"
+      "Version must have at least 3 parts",
     );
   });
 });
@@ -180,7 +180,7 @@ describe("convertArchForModernAPI", () => {
 describe("buildLegacyLatestReleaseUrl", () => {
   it("builds correct URL for version 114", () => {
     expect(buildLegacyLatestReleaseUrl(114)).toBe(
-      "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_114"
+      "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_114",
     );
   });
 });
@@ -188,13 +188,13 @@ describe("buildLegacyLatestReleaseUrl", () => {
 describe("buildLegacyDownloadUrl", () => {
   it("builds correct download URL", () => {
     expect(buildLegacyDownloadUrl("114.0.5735.90", "linux64")).toBe(
-      "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip"
+      "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_linux64.zip",
     );
   });
 
   it("builds correct URL for mac64", () => {
     expect(buildLegacyDownloadUrl("114.0.5735.90", "mac64")).toBe(
-      "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_mac64.zip"
+      "https://chromedriver.storage.googleapis.com/114.0.5735.90/chromedriver_mac64.zip",
     );
   });
 });
@@ -204,10 +204,10 @@ describe("extractDriverUrlFromJson", () => {
     const url = extractDriverUrlFromJson(
       MOCK_API_RESPONSE,
       "131.0.6778.204",
-      "linux64"
+      "linux64",
     );
     expect(url).toBe(
-      "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.204/linux64/chromedriver-linux64.zip"
+      "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.204/linux64/chromedriver-linux64.zip",
     );
   });
 
@@ -215,10 +215,10 @@ describe("extractDriverUrlFromJson", () => {
     const url = extractDriverUrlFromJson(
       MOCK_API_RESPONSE,
       "131.0.6778.204",
-      "mac-arm64"
+      "mac-arm64",
     );
     expect(url).toBe(
-      "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.204/mac-arm64/chromedriver-mac-arm64.zip"
+      "https://storage.googleapis.com/chrome-for-testing-public/131.0.6778.204/mac-arm64/chromedriver-mac-arm64.zip",
     );
   });
 
@@ -226,7 +226,7 @@ describe("extractDriverUrlFromJson", () => {
     const url = extractDriverUrlFromJson(
       MOCK_API_RESPONSE,
       "999.0.0.0",
-      "linux64"
+      "linux64",
     );
     expect(url).toBeNull();
   });
@@ -235,7 +235,7 @@ describe("extractDriverUrlFromJson", () => {
     const url = extractDriverUrlFromJson(
       MOCK_API_RESPONSE,
       "114.0.5735.90",
-      "win32"
+      "win32",
     );
     expect(url).toBeNull();
   });
@@ -274,19 +274,19 @@ describe("findFallbackVersion", () => {
 describe("getDefaultChromePath", () => {
   it("returns google-chrome-stable for linux", () => {
     expect(getDefaultChromePath("linux" as NodeJS.Platform)).toBe(
-      "google-chrome-stable"
+      "google-chrome-stable",
     );
   });
 
   it("returns macOS app path for darwin", () => {
     expect(getDefaultChromePath("darwin")).toBe(
-      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     );
   });
 
   it("returns Windows exe path for win32", () => {
     expect(getDefaultChromePath("win32")).toBe(
-      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
+      "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
     );
   });
 });
@@ -294,7 +294,7 @@ describe("getDefaultChromePath", () => {
 describe("getInstallPath", () => {
   it("returns /usr/local/bin/chromedriver for linux", () => {
     expect(getInstallPath("linux" as NodeJS.Platform)).toBe(
-      "/usr/local/bin/chromedriver"
+      "/usr/local/bin/chromedriver",
     );
   });
 
@@ -304,7 +304,7 @@ describe("getInstallPath", () => {
 
   it("returns Windows SeleniumWebDrivers path for win32", () => {
     expect(getInstallPath("win32")).toBe(
-      "C:\\SeleniumWebDrivers\\ChromeDriver"
+      "C:\\SeleniumWebDrivers\\ChromeDriver",
     );
   });
 });
