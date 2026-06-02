@@ -27,8 +27,8 @@ importers:
         specifier: ^7.7.3
         version: 7.8.1
       typed-rest-client:
-        specifier: ^2.1.0
-        version: 2.3.1
+        specifier: ^3.0.0
+        version: 3.0.0
     devDependencies:
       '@jest/globals':
         specifier: ^30.3.0
@@ -1552,8 +1552,8 @@ packages:
     resolution: {integrity: sha512-TeTSQ6H5YHvpqVwBRcnLDCBnDOHWYu7IvGbHT6N8AOymcr9PJGjc1GTtiWZTYg0NCgYwvnYWEkVChQAr9bjfwA==}
     engines: {node: '>=16'}
 
-  typed-rest-client@2.3.1:
-    resolution: {integrity: sha512-k4kX5Up6qA68D0Cby2AK+6+vM5k3qTxe+/3FqhnHRExjY5cfbOnzjQZbP/LXleF8hVoDvDqxlgk9KK83HoBZlQ==}
+  typed-rest-client@3.0.0:
+    resolution: {integrity: sha512-J1KaEgK4jvnShMs+Y/oRbWYUKG5chdE5jgCinPWqlP+qXcznJqY2SiGcckKEHeQEiRZQAE4kAfepvCzx5ACQtw==}
     engines: {node: '>= 16.0.0'}
 
   typescript@5.9.3:
@@ -3368,7 +3368,7 @@ snapshots:
 
   type-fest@4.41.0: {}
 
-  typed-rest-client@2.3.1:
+  typed-rest-client@3.0.0:
     dependencies:
       des.js: 1.1.0
       js-md4: 0.3.2
