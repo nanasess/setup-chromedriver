@@ -49,6 +49,13 @@ That's it! ChromeDriver will be installed and added to your PATH.
 > replacement. `@v2` remains available as the previous, shell-based
 > implementation for existing workflows that prefer to stay pinned.
 
+> [!WARNING]
+> **`@master` is deprecated** — the default branch is now `main`. If your
+> workflow references the action by the `master` branch
+> (`uses: nanasess/setup-chromedriver@master`), please migrate to `@v3` (or pin
+> a full commit SHA). The `master` branch is frozen, emits a deprecation
+> warning at runtime, and will not receive future updates.
+
 > [!TIP]
 > **Supply-chain hardening** — mutable tags like v3 can be repointed at any
 > time, so for security-sensitive workflows pin the action to a full-length
