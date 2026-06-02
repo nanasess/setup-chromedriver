@@ -1568,7 +1568,7 @@ module.exports = __nccwpck_require__(9023).inspect;
 
 /***/ }),
 
-/***/ 3106:
+/***/ 1231:
 /***/ ((module) => {
 
 
@@ -1598,14 +1598,14 @@ module.exports = {
 
 /***/ }),
 
-/***/ 9254:
+/***/ 7547:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var stringify = __nccwpck_require__(6475);
-var parse = __nccwpck_require__(8293);
-var formats = __nccwpck_require__(3106);
+var stringify = __nccwpck_require__(9402);
+var parse = __nccwpck_require__(2564);
+var formats = __nccwpck_require__(1231);
 
 module.exports = {
     formats: formats,
@@ -1616,12 +1616,12 @@ module.exports = {
 
 /***/ }),
 
-/***/ 8293:
+/***/ 2564:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var utils = __nccwpck_require__(3063);
+var utils = __nccwpck_require__(7318);
 
 var has = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;
@@ -1835,9 +1835,12 @@ var parseObject = function (chain, val, options, valuesParsed) {
     return leaf;
 };
 
-var splitKeyIntoSegments = function splitKeyIntoSegments(givenKey, options) {
-    var key = options.allowDots ? givenKey.replace(/\.([^.[]+)/g, '[$1]') : givenKey;
+// Split a key like "a[b][c[]]" into ['a', '[b]', '[c[]]'] while preserving
+// qs parse semantics for depth/prototype guards.
+var splitKeyIntoSegments = function splitKeyIntoSegments(originalKey, options) {
+    var key = options.allowDots ? originalKey.replace(/\.([^.[]+)/g, '[$1]') : originalKey;
 
+    // depth <= 0 keeps the whole key as one segment
     if (options.depth <= 0) {
         if (!options.plainObjects && has.call(Object.prototype, key)) {
             if (!options.allowPrototypes) {
@@ -1848,14 +1851,11 @@ var splitKeyIntoSegments = function splitKeyIntoSegments(givenKey, options) {
         return [key];
     }
 
-    var brackets = /(\[[^[\]]*])/;
-    var child = /(\[[^[\]]*])/g;
+    var segments = [];
 
-    var segment = brackets.exec(key);
-    var parent = segment ? key.slice(0, segment.index) : key;
-
-    var keys = [];
-
+    // parent before the first '[' (may be empty if key starts with '[')
+    var first = key.indexOf('[');
+    var parent = first >= 0 ? key.slice(0, first) : key;
     if (parent) {
         if (!options.plainObjects && has.call(Object.prototype, parent)) {
             if (!options.allowPrototypes) {
@@ -1863,32 +1863,62 @@ var splitKeyIntoSegments = function splitKeyIntoSegments(givenKey, options) {
             }
         }
 
-        keys[keys.length] = parent;
+        segments[segments.length] = parent;
     }
 
-    var i = 0;
-    while ((segment = child.exec(key)) !== null && i < options.depth) {
-        i += 1;
+    var n = key.length;
+    var open = first;
+    var collected = 0;
 
-        var segmentContent = segment[1].slice(1, -1);
-        if (!options.plainObjects && has.call(Object.prototype, segmentContent)) {
-            if (!options.allowPrototypes) {
-                return;
+    while (open >= 0 && collected < options.depth) {
+        var level = 1;
+        var i = open + 1;
+        var close = -1;
+
+        // balance nested '[' and ']' inside this bracket group using a nesting level counter
+        while (i < n && close < 0) {
+            var cu = key.charCodeAt(i);
+            if (cu === 0x5B) { // '['
+                level += 1;
+            } else if (cu === 0x5D) { // ']'
+                level -= 1;
+                if (level === 0) {
+                    close = i; // found matching close; loop will exit by condition
+                }
             }
+            i += 1;
         }
 
-        keys[keys.length] = segment[1];
+        if (close < 0) {
+            // Unterminated group: wrap the raw remainder in one bracket pair so it stays
+            // a single literal segment (e.g. "[[]b" -> "[[]b]"); we do not infer missing ']'.
+            segments[segments.length] = '[' + key.slice(open) + ']';
+            return segments;
+        }
+
+        var seg = key.slice(open, close + 1);
+        // prototype guard for the content of this group
+        var content = seg.slice(1, -1);
+        if (!options.plainObjects && has.call(Object.prototype, content) && !options.allowPrototypes) {
+            return;
+        }
+
+        segments[segments.length] = seg;
+        collected += 1;
+
+        // find the next '[' after this balanced group
+        open = key.indexOf('[', close + 1);
     }
 
-    if (segment) {
+    if (open >= 0) {
         if (options.strictDepth === true) {
             throw new RangeError('Input depth exceeded depth option of ' + options.depth + ' and strictDepth is true');
         }
 
-        keys[keys.length] = '[' + key.slice(segment.index) + ']';
+        segments[segments.length] = '[' + key.slice(open) + ']';
     }
 
-    return keys;
+    return segments;
 };
 
 var parseKeys = function parseQueryStringKeys(givenKey, val, options, valuesParsed) {
@@ -1996,14 +2026,14 @@ module.exports = function (str, opts) {
 
 /***/ }),
 
-/***/ 6475:
+/***/ 9402:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 var getSideChannel = __nccwpck_require__(7243);
-var utils = __nccwpck_require__(3063);
-var formats = __nccwpck_require__(3106);
+var utils = __nccwpck_require__(7318);
+var formats = __nccwpck_require__(1231);
 var has = Object.prototype.hasOwnProperty;
 
 var arrayPrefixGenerators = {
@@ -2119,7 +2149,7 @@ var stringify = function stringify(
 
     if (obj === null) {
         if (strictNullHandling) {
-            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, 'key', format) : prefix;
+            return formatter(encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, 'key', format) : prefix);
         }
 
         obj = '';
@@ -2143,7 +2173,9 @@ var stringify = function stringify(
     if (generateArrayPrefix === 'comma' && isArray(obj)) {
         // we need to join elements in
         if (encodeValuesOnly && encoder) {
-            obj = utils.maybeMap(obj, encoder);
+            obj = utils.maybeMap(obj, function (v) {
+                return v == null ? v : encoder(v);
+            });
         }
         objKeys = [{ value: obj.length > 0 ? obj.join(',') || null : void undefined }];
     } else if (isArray(filter)) {
@@ -2313,6 +2345,11 @@ module.exports = function (object, opts) {
     var sideChannel = getSideChannel();
     for (var i = 0; i < objKeys.length; ++i) {
         var key = objKeys[i];
+
+        if (typeof key === 'undefined' || key === null) {
+            continue;
+        }
+
         var value = obj[key];
 
         if (options.skipNulls && value === null) {
@@ -2346,10 +2383,10 @@ module.exports = function (object, opts) {
     if (options.charsetSentinel) {
         if (options.charset === 'iso-8859-1') {
             // encodeURIComponent('&#10003;'), the "numeric entity" representation of a checkmark
-            prefix += 'utf8=%26%2310003%3B&';
+            prefix += 'utf8=%26%2310003%3B' + options.delimiter;
         } else {
             // encodeURIComponent('✓')
-            prefix += 'utf8=%E2%9C%93&';
+            prefix += 'utf8=%E2%9C%93' + options.delimiter;
         }
     }
 
@@ -2359,12 +2396,12 @@ module.exports = function (object, opts) {
 
 /***/ }),
 
-/***/ 3063:
+/***/ 7318:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var formats = __nccwpck_require__(3106);
+var formats = __nccwpck_require__(1231);
 var getSideChannel = __nccwpck_require__(7243);
 
 var has = Object.prototype.hasOwnProperty;
@@ -6597,10 +6634,10 @@ exports.getUrl = getUrl;
 exports.decompressGzippedContent = decompressGzippedContent;
 exports.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
 exports.obtainContentCharset = obtainContentCharset;
-const qs = __nccwpck_require__(9254);
+const qs = __nccwpck_require__(7547);
 const url = __nccwpck_require__(7016);
 const path = __nccwpck_require__(6928);
-const zlib = __nccwpck_require__(725);
+const zlib = __nccwpck_require__(3106);
 /**
  * creates an url from a request url and optional base url (http://server:8080)
  * @param {string} resource - a fully qualified url or relative path
@@ -34452,7 +34489,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
 
 /***/ }),
 
-/***/ 725:
+/***/ 3106:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("zlib");
@@ -37402,7 +37439,7 @@ function error(message, properties = {}) {
  * @param properties optional properties to add to the annotation.
  */
 function warning(message, properties = {}) {
-    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+    command_issueCommand('warning', utils_toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
  * Adds a notice issue
@@ -38994,6 +39031,9 @@ async function installOnWindows(opts) {
 async function run() {
     try {
         console.log(`##setup chromedriver`);
+        warning("nanasess/setup-chromedriver@master is deprecated and no longer maintained. " +
+            "Please switch to a release tag: uses: nanasess/setup-chromedriver@v3 " +
+            "(or pin a full commit SHA). The master branch will not receive future updates.");
         const version = getInput("chromedriver-version", { required: false });
         const chromeapp = getInput("chromeapp", { required: false });
         const plat = process.platform;
