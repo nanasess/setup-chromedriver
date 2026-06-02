@@ -1568,7 +1568,7 @@ module.exports = __nccwpck_require__(9023).inspect;
 
 /***/ }),
 
-/***/ 3106:
+/***/ 1231:
 /***/ ((module) => {
 
 
@@ -1598,14 +1598,14 @@ module.exports = {
 
 /***/ }),
 
-/***/ 9254:
+/***/ 7547:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var stringify = __nccwpck_require__(6475);
-var parse = __nccwpck_require__(8293);
-var formats = __nccwpck_require__(3106);
+var stringify = __nccwpck_require__(9402);
+var parse = __nccwpck_require__(2564);
+var formats = __nccwpck_require__(1231);
 
 module.exports = {
     formats: formats,
@@ -1616,12 +1616,12 @@ module.exports = {
 
 /***/ }),
 
-/***/ 8293:
+/***/ 2564:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var utils = __nccwpck_require__(3063);
+var utils = __nccwpck_require__(7318);
 
 var has = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;
@@ -1835,9 +1835,12 @@ var parseObject = function (chain, val, options, valuesParsed) {
     return leaf;
 };
 
-var splitKeyIntoSegments = function splitKeyIntoSegments(givenKey, options) {
-    var key = options.allowDots ? givenKey.replace(/\.([^.[]+)/g, '[$1]') : givenKey;
+// Split a key like "a[b][c[]]" into ['a', '[b]', '[c[]]'] while preserving
+// qs parse semantics for depth/prototype guards.
+var splitKeyIntoSegments = function splitKeyIntoSegments(originalKey, options) {
+    var key = options.allowDots ? originalKey.replace(/\.([^.[]+)/g, '[$1]') : originalKey;
 
+    // depth <= 0 keeps the whole key as one segment
     if (options.depth <= 0) {
         if (!options.plainObjects && has.call(Object.prototype, key)) {
             if (!options.allowPrototypes) {
@@ -1848,14 +1851,11 @@ var splitKeyIntoSegments = function splitKeyIntoSegments(givenKey, options) {
         return [key];
     }
 
-    var brackets = /(\[[^[\]]*])/;
-    var child = /(\[[^[\]]*])/g;
+    var segments = [];
 
-    var segment = brackets.exec(key);
-    var parent = segment ? key.slice(0, segment.index) : key;
-
-    var keys = [];
-
+    // parent before the first '[' (may be empty if key starts with '[')
+    var first = key.indexOf('[');
+    var parent = first >= 0 ? key.slice(0, first) : key;
     if (parent) {
         if (!options.plainObjects && has.call(Object.prototype, parent)) {
             if (!options.allowPrototypes) {
@@ -1863,32 +1863,62 @@ var splitKeyIntoSegments = function splitKeyIntoSegments(givenKey, options) {
             }
         }
 
-        keys[keys.length] = parent;
+        segments[segments.length] = parent;
     }
 
-    var i = 0;
-    while ((segment = child.exec(key)) !== null && i < options.depth) {
-        i += 1;
+    var n = key.length;
+    var open = first;
+    var collected = 0;
 
-        var segmentContent = segment[1].slice(1, -1);
-        if (!options.plainObjects && has.call(Object.prototype, segmentContent)) {
-            if (!options.allowPrototypes) {
-                return;
+    while (open >= 0 && collected < options.depth) {
+        var level = 1;
+        var i = open + 1;
+        var close = -1;
+
+        // balance nested '[' and ']' inside this bracket group using a nesting level counter
+        while (i < n && close < 0) {
+            var cu = key.charCodeAt(i);
+            if (cu === 0x5B) { // '['
+                level += 1;
+            } else if (cu === 0x5D) { // ']'
+                level -= 1;
+                if (level === 0) {
+                    close = i; // found matching close; loop will exit by condition
+                }
             }
+            i += 1;
         }
 
-        keys[keys.length] = segment[1];
+        if (close < 0) {
+            // Unterminated group: wrap the raw remainder in one bracket pair so it stays
+            // a single literal segment (e.g. "[[]b" -> "[[]b]"); we do not infer missing ']'.
+            segments[segments.length] = '[' + key.slice(open) + ']';
+            return segments;
+        }
+
+        var seg = key.slice(open, close + 1);
+        // prototype guard for the content of this group
+        var content = seg.slice(1, -1);
+        if (!options.plainObjects && has.call(Object.prototype, content) && !options.allowPrototypes) {
+            return;
+        }
+
+        segments[segments.length] = seg;
+        collected += 1;
+
+        // find the next '[' after this balanced group
+        open = key.indexOf('[', close + 1);
     }
 
-    if (segment) {
+    if (open >= 0) {
         if (options.strictDepth === true) {
             throw new RangeError('Input depth exceeded depth option of ' + options.depth + ' and strictDepth is true');
         }
 
-        keys[keys.length] = '[' + key.slice(segment.index) + ']';
+        segments[segments.length] = '[' + key.slice(open) + ']';
     }
 
-    return keys;
+    return segments;
 };
 
 var parseKeys = function parseQueryStringKeys(givenKey, val, options, valuesParsed) {
@@ -1996,14 +2026,14 @@ module.exports = function (str, opts) {
 
 /***/ }),
 
-/***/ 6475:
+/***/ 9402:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 var getSideChannel = __nccwpck_require__(7243);
-var utils = __nccwpck_require__(3063);
-var formats = __nccwpck_require__(3106);
+var utils = __nccwpck_require__(7318);
+var formats = __nccwpck_require__(1231);
 var has = Object.prototype.hasOwnProperty;
 
 var arrayPrefixGenerators = {
@@ -2119,7 +2149,7 @@ var stringify = function stringify(
 
     if (obj === null) {
         if (strictNullHandling) {
-            return encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, 'key', format) : prefix;
+            return formatter(encoder && !encodeValuesOnly ? encoder(prefix, defaults.encoder, charset, 'key', format) : prefix);
         }
 
         obj = '';
@@ -2143,7 +2173,9 @@ var stringify = function stringify(
     if (generateArrayPrefix === 'comma' && isArray(obj)) {
         // we need to join elements in
         if (encodeValuesOnly && encoder) {
-            obj = utils.maybeMap(obj, encoder);
+            obj = utils.maybeMap(obj, function (v) {
+                return v == null ? v : encoder(v);
+            });
         }
         objKeys = [{ value: obj.length > 0 ? obj.join(',') || null : void undefined }];
     } else if (isArray(filter)) {
@@ -2313,6 +2345,11 @@ module.exports = function (object, opts) {
     var sideChannel = getSideChannel();
     for (var i = 0; i < objKeys.length; ++i) {
         var key = objKeys[i];
+
+        if (typeof key === 'undefined' || key === null) {
+            continue;
+        }
+
         var value = obj[key];
 
         if (options.skipNulls && value === null) {
@@ -2346,10 +2383,10 @@ module.exports = function (object, opts) {
     if (options.charsetSentinel) {
         if (options.charset === 'iso-8859-1') {
             // encodeURIComponent('&#10003;'), the "numeric entity" representation of a checkmark
-            prefix += 'utf8=%26%2310003%3B&';
+            prefix += 'utf8=%26%2310003%3B' + options.delimiter;
         } else {
             // encodeURIComponent('✓')
-            prefix += 'utf8=%E2%9C%93&';
+            prefix += 'utf8=%E2%9C%93' + options.delimiter;
         }
     }
 
@@ -2359,12 +2396,12 @@ module.exports = function (object, opts) {
 
 /***/ }),
 
-/***/ 3063:
+/***/ 7318:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var formats = __nccwpck_require__(3106);
+var formats = __nccwpck_require__(1231);
 var getSideChannel = __nccwpck_require__(7243);
 
 var has = Object.prototype.hasOwnProperty;
@@ -6055,7 +6092,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 2066:
+/***/ 4439:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6073,10 +6110,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HttpClient = exports.HttpClientResponse = exports.HttpCodes = void 0;
 exports.isHttps = isHttps;
-const url = __nccwpck_require__(7016);
 const http = __nccwpck_require__(8611);
 const https = __nccwpck_require__(5692);
-const util = __nccwpck_require__(73);
+const util = __nccwpck_require__(1584);
 let fs;
 let tunnel;
 var HttpCodes;
@@ -6149,7 +6185,7 @@ class HttpClientResponse {
 }
 exports.HttpClientResponse = HttpClientResponse;
 function isHttps(requestUrl) {
-    let parsedUrl = url.parse(requestUrl);
+    const parsedUrl = new URL(requestUrl);
     return parsedUrl.protocol === 'https:';
 }
 var EnvironmentVariables;
@@ -6266,7 +6302,7 @@ class HttpClient {
             if (this._disposed) {
                 throw new Error("Client has already been disposed.");
             }
-            let parsedUrl = url.parse(requestUrl);
+            const parsedUrl = new URL(requestUrl);
             let info = this._prepareRequest(verb, parsedUrl, headers);
             // Only perform retries on reads since writes may not be idempotent.
             let maxTries = (this._allowRetries && RetryableHttpVerbs.indexOf(verb) != -1) ? this._maxRetries + 1 : 1;
@@ -6311,7 +6347,7 @@ class HttpClient {
                         // if there's no location to redirect to, we won't
                         break;
                     }
-                    let parsedRedirectUrl = url.parse(redirectUrl);
+                    const parsedRedirectUrl = new URL(redirectUrl, parsedUrl.href);
                     if (parsedUrl.protocol == 'https:' && parsedUrl.protocol != parsedRedirectUrl.protocol && !this._allowRedirectDowngrade) {
                         throw new Error("Redirect from HTTPS to HTTP protocol. This downgrade is not allowed for security reasons. If you want to allow this behavior, set the allowRedirectDowngrade option to true.");
                     }
@@ -6414,13 +6450,13 @@ class HttpClient {
     _prepareRequest(method, requestUrl, headers) {
         const info = {};
         info.parsedUrl = requestUrl;
-        const usingSsl = info.parsedUrl.protocol === 'https:';
+        const usingSsl = requestUrl.protocol === 'https:';
         info.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
         info.options = {};
-        info.options.host = info.parsedUrl.hostname;
-        info.options.port = info.parsedUrl.port ? parseInt(info.parsedUrl.port) : defaultPort;
-        info.options.path = (info.parsedUrl.pathname || '') + (info.parsedUrl.search || '');
+        info.options.host = requestUrl.hostname;
+        info.options.port = requestUrl.port ? parseInt(requestUrl.port) : defaultPort;
+        info.options.path = requestUrl.pathname + requestUrl.search;
         info.options.method = method;
         info.options.timeout = (this.requestOptions && this.requestOptions.socketTimeout) || this._socketTimeout;
         this._socketTimeout = info.options.timeout;
@@ -6428,9 +6464,9 @@ class HttpClient {
         if (this.userAgent != null) {
             info.options.headers["user-agent"] = this.userAgent;
         }
-        info.options.agent = this._getAgent(info.parsedUrl);
+        info.options.agent = this._getAgent(requestUrl);
         // gives handlers an opportunity to participate
-        if (this.handlers && !this._isPresigned(url.format(requestUrl))) {
+        if (this.handlers && !this._isPresigned(requestUrl.href)) {
             this.handlers.forEach((handler) => {
                 handler.prepareRequest(info.options);
             });
@@ -6485,7 +6521,7 @@ class HttpClient {
                 proxy: {
                     proxyAuth: proxy.proxyAuth,
                     host: proxy.proxyUrl.hostname,
-                    port: proxy.proxyUrl.port
+                    port: Number(proxy.proxyUrl.port) || (proxy.proxyUrl.protocol === 'https:' ? 443 : 80)
                 },
             };
             let tunnelAgent;
@@ -6546,7 +6582,7 @@ class HttpClient {
         let proxyAuth;
         if (proxyConfig) {
             if (proxyConfig.proxyUrl.length > 0) {
-                proxyUrl = url.parse(proxyConfig.proxyUrl);
+                proxyUrl = new URL(proxyConfig.proxyUrl);
             }
             if (proxyConfig.proxyUsername || proxyConfig.proxyPassword) {
                 proxyAuth = proxyConfig.proxyUsername + ":" + proxyConfig.proxyPassword;
@@ -6577,7 +6613,7 @@ exports.HttpClient = HttpClient;
 
 /***/ }),
 
-/***/ 73:
+/***/ 1584:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6597,10 +6633,8 @@ exports.getUrl = getUrl;
 exports.decompressGzippedContent = decompressGzippedContent;
 exports.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
 exports.obtainContentCharset = obtainContentCharset;
-const qs = __nccwpck_require__(9254);
-const url = __nccwpck_require__(7016);
-const path = __nccwpck_require__(6928);
-const zlib = __nccwpck_require__(725);
+const qs = __nccwpck_require__(7547);
+const zlib = __nccwpck_require__(3106);
 /**
  * creates an url from a request url and optional base url (http://server:8080)
  * @param {string} resource - a fully qualified url or relative path
@@ -6609,7 +6643,6 @@ const zlib = __nccwpck_require__(725);
  * @return {string} - resultant url
  */
 function getUrl(resource, baseUrl, queryParams) {
-    const pathApi = path.posix || path;
     let requestUrl = '';
     if (!baseUrl) {
         requestUrl = resource;
@@ -6618,17 +6651,17 @@ function getUrl(resource, baseUrl, queryParams) {
         requestUrl = baseUrl;
     }
     else {
-        const base = url.parse(baseUrl);
-        const resultantUrl = url.parse(resource);
-        // resource (specific per request) elements take priority
-        resultantUrl.protocol = resultantUrl.protocol || base.protocol;
-        resultantUrl.auth = resultantUrl.auth || base.auth;
-        resultantUrl.host = resultantUrl.host || base.host;
-        resultantUrl.pathname = pathApi.resolve(base.pathname, resultantUrl.pathname);
+        const effectiveBase = new URL(baseUrl);
+        // Ensure the base path is treated as a directory so relative resource paths
+        // append to it without corrupting any existing query string or fragment.
+        if (!effectiveBase.pathname.endsWith('/')) {
+            effectiveBase.pathname += '/';
+        }
+        const resultantUrl = new URL(resource, effectiveBase.href);
         if (!resultantUrl.pathname.endsWith('/') && resource.endsWith('/')) {
             resultantUrl.pathname += '/';
         }
-        requestUrl = url.format(resultantUrl);
+        requestUrl = resultantUrl.href;
     }
     return queryParams ?
         getUrlWithParsedQueryParams(requestUrl, queryParams) :
@@ -34417,13 +34450,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:zlib");
 
 /***/ }),
 
-/***/ 6928:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
-
-/***/ }),
-
 /***/ 3193:
 /***/ ((module) => {
 
@@ -34438,13 +34464,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("tls");
 
 /***/ }),
 
-/***/ 7016:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
-
-/***/ }),
-
 /***/ 9023:
 /***/ ((module) => {
 
@@ -34452,7 +34471,7 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("util");
 
 /***/ }),
 
-/***/ 725:
+/***/ 3106:
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("zlib");
@@ -34726,8 +34745,8 @@ function file_command_prepareKeyValueMessage(key, value) {
     return `${key}<<${delimiter}${os.EOL}${convertedValue}${os.EOL}${delimiter}`;
 }
 //# sourceMappingURL=file-command.js.map
-// EXTERNAL MODULE: external "path"
-var external_path_ = __nccwpck_require__(6928);
+;// CONCATENATED MODULE: external "path"
+const external_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 // EXTERNAL MODULE: external "http"
 var external_http_ = __nccwpck_require__(8611);
 var external_http_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_http_, 2);
@@ -36096,7 +36115,7 @@ function tryGetExecutablePath(filePath, extensions) {
         if (stats && stats.isFile()) {
             if (IS_WINDOWS) {
                 // on Windows, test for valid extension
-                const upperExt = external_path_.extname(filePath).toUpperCase();
+                const upperExt = external_path_namespaceObject.extname(filePath).toUpperCase();
                 if (extensions.some(validExt => validExt.toUpperCase() === upperExt)) {
                     return filePath;
                 }
@@ -36125,11 +36144,11 @@ function tryGetExecutablePath(filePath, extensions) {
                 if (IS_WINDOWS) {
                     // preserve the case of the actual file (since an extension was appended)
                     try {
-                        const directory = external_path_.dirname(filePath);
-                        const upperName = external_path_.basename(filePath).toUpperCase();
+                        const directory = external_path_namespaceObject.dirname(filePath);
+                        const upperName = external_path_namespaceObject.basename(filePath).toUpperCase();
                         for (const actualName of yield readdir(directory)) {
                             if (upperName === actualName.toUpperCase()) {
-                                filePath = external_path_.join(directory, actualName);
+                                filePath = external_path_namespaceObject.join(directory, actualName);
                                 break;
                             }
                         }
@@ -36210,7 +36229,7 @@ function io_cp(source_1, dest_1) {
         }
         // If dest is an existing directory, should copy inside.
         const newDest = destStat && destStat.isDirectory() && copySourceDirectory
-            ? external_path_.join(dest, external_path_.basename(source))
+            ? external_path_namespaceObject.join(dest, external_path_namespaceObject.basename(source))
             : dest;
         if (!(yield exists(source))) {
             throw new Error(`no such file or directory: ${source}`);
@@ -36225,7 +36244,7 @@ function io_cp(source_1, dest_1) {
             }
         }
         else {
-            if (external_path_.relative(source, newDest) === '') {
+            if (external_path_namespaceObject.relative(source, newDest) === '') {
                 // a file cannot be copied to itself
                 throw new Error(`'${newDest}' and '${source}' are the same file`);
             }
@@ -36349,7 +36368,7 @@ function findInPath(tool) {
         // build the list of extensions to try
         const extensions = [];
         if (IS_WINDOWS && process.env['PATHEXT']) {
-            for (const extension of process.env['PATHEXT'].split(external_path_.delimiter)) {
+            for (const extension of process.env['PATHEXT'].split(external_path_namespaceObject.delimiter)) {
                 if (extension) {
                     extensions.push(extension);
                 }
@@ -36364,7 +36383,7 @@ function findInPath(tool) {
             return [];
         }
         // if any path separators, return empty
-        if (tool.includes(external_path_.sep)) {
+        if (tool.includes(external_path_namespaceObject.sep)) {
             return [];
         }
         // build the list of directories
@@ -36375,7 +36394,7 @@ function findInPath(tool) {
         // across platforms.
         const directories = [];
         if (process.env.PATH) {
-            for (const p of process.env.PATH.split(external_path_.delimiter)) {
+            for (const p of process.env.PATH.split(external_path_namespaceObject.delimiter)) {
                 if (p) {
                     directories.push(p);
                 }
@@ -36384,7 +36403,7 @@ function findInPath(tool) {
         // find all matches
         const matches = [];
         for (const directory of directories) {
-            const filePath = yield tryGetExecutablePath(external_path_.join(directory, tool), extensions);
+            const filePath = yield tryGetExecutablePath(external_path_namespaceObject.join(directory, tool), extensions);
             if (filePath) {
                 matches.push(filePath);
             }
@@ -36815,7 +36834,7 @@ class ToolRunner extends external_events_.EventEmitter {
                 (this.toolPath.includes('/') ||
                     (toolrunner_IS_WINDOWS && this.toolPath.includes('\\')))) {
                 // prefer options.cwd if it is specified, however options.cwd may also need to be rooted
-                this.toolPath = external_path_.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
+                this.toolPath = external_path_namespaceObject.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
             }
             // if the tool is only a file name, then resolve it from the PATH
             // otherwise verify it exists (add extension on Windows if necessary)
@@ -37830,8 +37849,8 @@ const userAgent = 'actions/tool-cache';
  */
 function downloadTool(url, dest, auth, headers) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        dest = dest || external_path_.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
-        yield mkdirP(external_path_.dirname(dest));
+        dest = dest || external_path_namespaceObject.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
+        yield mkdirP(external_path_namespaceObject.dirname(dest));
         core_debug(`Downloading ${url}`);
         core_debug(`Destination ${dest}`);
         const maxAttempts = 3;
@@ -38313,7 +38332,7 @@ function _createExtractFolder(dest) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
         if (!dest) {
             // create a temp dir
-            dest = external_path_.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
+            dest = external_path_namespaceObject.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
         }
         yield mkdirP(dest);
         return dest;
@@ -38459,8 +38478,8 @@ async function downloadAndExtractZip(url) {
     throw new Error(`Failed to download and extract ChromeDriver from ${url} after ${maxRetries} attempts: ${message}`);
 }
 
-// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@2.3.1/node_modules/typed-rest-client/HttpClient.js
-var typed_rest_client_HttpClient = __nccwpck_require__(2066);
+// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@3.0.0/node_modules/typed-rest-client/HttpClient.js
+var typed_rest_client_HttpClient = __nccwpck_require__(4439);
 ;// CONCATENATED MODULE: ./lib/installer/http.js
 /**
  * HTTP helpers used by the TypeScript rewrite of setup-chromedriver.
@@ -38865,7 +38884,7 @@ async function installOnUnix(opts) {
         info(`Downloading ${url}...`);
         // Download + unzip. Legacy zip has the `chromedriver` binary at the root.
         const extractedDir = await downloadAndExtractZip(url);
-        const source = external_path_.join(extractedDir, "chromedriver");
+        const source = external_path_namespaceObject.join(extractedDir, "chromedriver");
         // `${sudo} mv chromedriver /usr/local/bin/chromedriver`
         await sudoMove(sudo, source, installPath);
         // `exit` -- legacy path terminates without printing versions.
@@ -38891,7 +38910,7 @@ async function installOnUnix(opts) {
     // `chromedriver-${arch}/chromedriver`.
     const extractedDir = await downloadAndExtractZip(url);
     info("Installing chromedriver to /usr/local/bin");
-    const source = external_path_.join(extractedDir, `chromedriver-${modernArch}`, "chromedriver");
+    const source = external_path_namespaceObject.join(extractedDir, `chromedriver-${modernArch}`, "chromedriver");
     // `${sudo} mv "chromedriver-${ARCH}/chromedriver" /usr/local/bin/chromedriver`
     await sudoMove(sudo, source, installPath);
     // `if command -v "${CHROMEAPP}" >/dev/null; then echo Chrome version:; "${CHROMEAPP}" --version; fi`
@@ -38956,12 +38975,12 @@ async function installOnWindows(opts) {
         info(`Downloading ${url}...`);
         const extractedDir = await downloadAndExtractZip(url);
         // Legacy zip: chromedriver.exe is at the root of the archive.
-        const binary = external_path_.join(extractedDir, "chromedriver.exe");
+        const binary = external_path_namespaceObject.join(extractedDir, "chromedriver.exe");
         // Use cp, not mv: tool-cache extracts to the temp drive (D:) while the
         // install path is on C:, and io.mv uses fs.rename which fails with EXDEV
         // across drives. The original ps1 used Move-Item, which copies across
         // volumes. A copy achieves the same install (the temp source is ephemeral).
-        await io_cp(binary, external_path_.join(installPath, "chromedriver.exe"), {
+        await io_cp(binary, external_path_namespaceObject.join(installPath, "chromedriver.exe"), {
             force: true,
         });
         return;
@@ -38978,10 +38997,10 @@ async function installOnWindows(opts) {
     // (The original ps1 produced a double-nested path as a side effect of
     // Expand-Archive -Force without -DestinationPath; tool-cache.extractZip
     // honors the real zip structure, so we do not reproduce the double nesting.)
-    const binary = external_path_.join(extractedDir, "chromedriver-win32", "chromedriver.exe");
+    const binary = external_path_namespaceObject.join(extractedDir, "chromedriver-win32", "chromedriver.exe");
     // Use cp, not mv: see the legacy branch above — io.mv (fs.rename) fails with
     // EXDEV when the temp drive (D:) and the install path (C:) differ.
-    await io_cp(binary, external_path_.join(installPath, "chromedriver.exe"), {
+    await io_cp(binary, external_path_namespaceObject.join(installPath, "chromedriver.exe"), {
         force: true,
     });
 }
