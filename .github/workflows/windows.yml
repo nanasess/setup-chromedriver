@@ -30,7 +30,7 @@ jobs:
           - 'master'
           - 'now'
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
@@ -94,7 +94,7 @@ jobs:
           - 'master'
           - 'now'
     steps:
-    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+    - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
     - shell: pwsh
       run: echo "CHROMEAPP=C:\Program Files\Google\Chrome\Application\chrome.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
     - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
