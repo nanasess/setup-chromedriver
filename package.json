@@ -39,7 +39,6 @@
     "@vercel/ncc": "^0.38.4",
     "@jest/globals": "^30.3.0",
     "jest": "^30.3.0",
-    "jest-circus": "^30.3.0",
     "prettier": "^3.8.1",
     "selenium-webdriver": "^4.39.0",
     "ts-jest": "^29.2.5",
