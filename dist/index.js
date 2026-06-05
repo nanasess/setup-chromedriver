@@ -38690,10 +38690,15 @@ async function resolveLegacyVersion(majorVersion) {
 /**
  * Linux / macOS installer for the TypeScript rewrite of setup-chromedriver.
  *
- * This module reproduces the behavior of `lib/setup-chromedriver.sh` 1:1:
+ * This module reproduces the behavior of `lib/setup-chromedriver.sh`, with a
+ * few deliberate modernizations in the linux64 apt path (see
+ * `installLinuxDependencies`):
  *
- *   - apt dependency installation on linux64 (apt-key / google.list / apt-get),
- *     reproduced via `@actions/exec` so that runner behavior is unchanged.
+ *   - apt dependency installation on linux64 (signing key / google.list /
+ *     apt-get), reproduced via `@actions/exec` so that runner behavior is
+ *     unchanged. `curl` and `jq` are no longer installed (the native code uses
+ *     Node HTTP + `JSON.parse`), and the broken `apt-key adv` step is replaced
+ *     by a native key download + a `signed-by` keyring (no `gnupg` needed).
  *   - Chrome major-version detection and the legacy (<115) vs modern (>=115)
  *     download / install split.
  *   - Installation to `/usr/local/bin/chromedriver` via `mv` (with `sudo` when
@@ -38711,6 +38716,15 @@ async function resolveLegacyVersion(majorVersion) {
 
 
 
+
+// Google's Linux package signing key, and the `signed-by` keyring path it is
+// installed to. This replaces the original `apt-key adv ... --recv-keys` step,
+// which is broken on Debian 12+ / recent apt where `apt-key` has been removed
+// (the root cause of container failures such as #243). apt reads ASCII-armored
+// keyrings directly, so the downloaded `.pub` is written verbatim — no
+// `gpg --dearmor`, and therefore no `gnupg` dependency.
+const GOOGLE_SIGNING_KEY_URL = "https://dl.google.com/linux/linux_signing_key.pub";
+const GOOGLE_KEYRING_PATH = "/usr/share/keyrings/google-chrome.asc";
 /**
  * Resolve the `sudo` executable path, mirroring `sudo=$(command -v sudo)`.
  *
@@ -38766,44 +38780,53 @@ async function installLinuxDependencies(sudo, chromeapp) {
         silent: true,
     });
     if (dpkgStatus !== 0) {
-        // `${sudo} apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4EB27DB2A3B88B8B`
-        await runWithSudo(sudo, "apt-key", [
-            "adv",
-            "--keyserver",
-            "keyserver.ubuntu.com",
-            "--recv-keys",
-            "4EB27DB2A3B88B8B",
-        ]);
-        // `echo "deb [arch=amd64] ..." | ${sudo} tee /etc/apt/sources.list.d/google.list >/dev/null`
-        // Reproduce the piped `tee` without invoking a shell: feed the repo line to
-        // tee's stdin via @actions/exec's `input` option, and run tee under sudo
-        // when available. Avoiding `sh -c` removes any shell string interpolation.
-        const teeArgs = ["/etc/apt/sources.list.d/google.list"];
-        await runWithSudo(sudo, "tee", teeArgs, {
-            input: Buffer.from("deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main\n"),
+        // Set up the Google Chrome apt repository using the modern `signed-by`
+        // keyring scheme. The shell script used `apt-key adv --recv-keys`, which no
+        // longer works on Debian 12+ / recent apt (apt-key was removed) — see
+        // GOOGLE_SIGNING_KEY_URL above. Download the signing key natively over HTTP
+        // and install it as an ASCII-armored keyring.
+        const signingKey = await fetchText(GOOGLE_SIGNING_KEY_URL);
+        // `fetchText` already throws on non-2xx / network errors, but a 200 response
+        // with unexpected content (e.g. a redirect or error page) would otherwise be
+        // written as-is and surface only later as a cryptic `apt-get update` failure.
+        // Validate the armored key up front so the error points at the real cause.
+        if (!signingKey || !signingKey.includes("BEGIN PGP PUBLIC KEY BLOCK")) {
+            throw new Error(`Downloaded Google signing key from ${GOOGLE_SIGNING_KEY_URL} is not a valid PGP public key block.`);
+        }
+        // Write the keyring with `tee` (under sudo when available), feeding the key
+        // to stdin via @actions/exec's `input` option. Using stdin avoids `sh -c`
+        // and keeps the key material out of the process arguments.
+        await runWithSudo(sudo, "tee", [GOOGLE_KEYRING_PATH], {
+            input: Buffer.from(signingKey),
+            // Suppress tee echoing stdin back to stdout (the key is not secret, but
+            // there is no value in logging it).
+            silent: true,
+        });
+        // `echo "deb [arch=amd64 signed-by=...] ..." | ${sudo} tee google.list >/dev/null`
+        // Same piped-tee-via-stdin pattern; the repo line now pins the keyring.
+        await runWithSudo(sudo, "tee", ["/etc/apt/sources.list.d/google.list"], {
+            input: Buffer.from(`deb [arch=amd64 signed-by=${GOOGLE_KEYRING_PATH}] https://dl.google.com/linux/chrome/deb/ stable main\n`),
             // Mirror the original `>/dev/null` (suppress tee echoing stdin to stdout).
             silent: true,
         });
         // `APP=google-chrome-stable`
         app = "google-chrome-stable";
     }
-    // Build the `apps=()` array exactly as the shell script does.
+    // Build the `apps[]` array of packages to apt-install. This diverges
+    // intentionally from setup-chromedriver.sh, which also added `curl` and `jq`.
+    // The native implementation performs HTTP via Node (@actions/tool-cache /
+    // typed-rest-client) and parses JSON with `JSON.parse`, so neither binary is
+    // used anymore — installing them would be dead weight and adds friction to
+    // minimal `container:` images. `unzip` is still required because
+    // `@actions/tool-cache.extractZip` shells out to it on Unix.
     const apps = [];
     // `test -z "${sudo}" && apps+=(sudo)`
     if (!sudo) {
         apps.push("sudo");
     }
-    // `type -a curl > /dev/null 2>&1 || apps+=(curl)`
-    if (!(await commandExists("curl"))) {
-        apps.push("curl");
-    }
     // `type -a "${CHROMEAPP}" > /dev/null 2>&1 || apps+=("${APP}")`
     if (!(await commandExists(chromeApp))) {
         apps.push(app);
-    }
-    // `type -a jq > /dev/null 2>&1 || apps+=(jq)`
-    if (!(await commandExists("jq"))) {
-        apps.push("jq");
     }
     // `type -a unzip > /dev/null 2>&1 || apps+=(unzip)`
     if (!(await commandExists("unzip"))) {
