@@ -5,9 +5,11 @@
  * ./download and ./version. No network, no filesystem access, no real
  * subprocess execution occurs.
  *
- * The assertions verify parity with lib/setup-chromedriver.sh:
- *   - apt `apps=()` construction (sudo / curl / chromeapp / jq / unzip absence)
- *   - dpkg-not-installed -> apt-key + google.list tee + APP rewrite
+ * The assertions verify parity with lib/setup-chromedriver.sh, except for the
+ * apt `apps[]` list, which intentionally omits `curl`/`jq` (unused by the
+ * native implementation):
+ *   - apt `apps[]` construction (sudo / chromeapp / unzip absence)
+ *   - dpkg-not-installed -> signed-by keyring + google.list tee + APP rewrite
  *   - legacy (<115) vs modern (>=115) zip path resolution
  *   - sudo present vs absent in the `mv` command
  */
@@ -40,12 +42,17 @@ jest.unstable_mockModule("../src/installer/version.js", () => ({
   resolveLegacyVersion: jest.fn(),
   resolveModernDownload: jest.fn(),
 }));
+jest.unstable_mockModule("../src/installer/http.js", () => ({
+  fetchText: jest.fn(),
+  fetchJson: jest.fn(),
+}));
 
 const exec = await import("@actions/exec");
 const io = await import("@actions/io");
 const { installOnUnix } = await import("../src/installer/unix.js");
 const downloadMod = await import("../src/installer/download.js");
 const versionMod = await import("../src/installer/version.js");
+const httpMod = await import("../src/installer/http.js");
 
 const execMock = jest.mocked(exec.exec);
 const whichMock = jest.mocked(io.which);
@@ -53,6 +60,7 @@ const downloadAndExtractZip = jest.mocked(downloadMod.downloadAndExtractZip);
 const detectFullChromeVersion = jest.mocked(versionMod.detectFullChromeVersion);
 const resolveLegacyVersion = jest.mocked(versionMod.resolveLegacyVersion);
 const resolveModernDownload = jest.mocked(versionMod.resolveModernDownload);
+const fetchTextMock = jest.mocked(httpMod.fetchText);
 
 // The install path is derived from process.platform at runtime. Compute the
 // expected value the same way the implementation does so the test is valid
@@ -115,6 +123,7 @@ beforeEach(() => {
   });
   resolveLegacyVersion.mockResolvedValue("114.0.5735.90");
   detectFullChromeVersion.mockResolvedValue("131.0.6778.204");
+  fetchTextMock.mockResolvedValue("-----BEGIN PGP PUBLIC KEY BLOCK-----\n");
 });
 
 // ---------------------------------------------------------------------------
@@ -163,10 +172,10 @@ describe("installOnUnix - linux apt dependency installation", () => {
     ).toBe(false);
   });
 
-  test("package not installed triggers apt-key + google.list tee + APP rewrite", async () => {
+  test("package not installed sets up signed-by keyring + google.list tee + APP rewrite", async () => {
     // dpkg present, but package not installed (dpkg -s returns non-zero).
     // chromeapp default 'google-chrome-stable' is NOT present so it gets added.
-    setPresentCommands(["sudo", "dpkg", "curl", "jq", "unzip"]);
+    setPresentCommands(["sudo", "dpkg", "unzip"]);
     execMock.mockImplementation(async (command: string, args?: string[]) => {
       if (command === "dpkg" && args && args[0] === "-s") {
         return 1; // not installed
@@ -178,25 +187,37 @@ describe("installOnUnix - linux apt dependency installation", () => {
 
     const calls = execCalls();
 
-    // apt-key adv ... 4EB27DB2A3B88B8B (under sudo).
+    // The legacy `apt-key adv` step (broken on Debian 12+) must be gone.
     const aptKey = calls.find(
       (c) => c.args.includes("apt-key") || c.command === "apt-key",
     );
-    expect(aptKey).toBeDefined();
-    expect(aptKey!.args).toContain("--recv-keys");
-    expect(aptKey!.args).toContain("4EB27DB2A3B88B8B");
-    expect(aptKey!.args).toContain("keyserver.ubuntu.com");
+    expect(aptKey).toBeUndefined();
 
-    // tee google.list: no shell — the repo line is piped to tee's stdin via
-    // the `input` option, and tee runs under sudo (command path or args).
-    const tee = calls.find(
-      (c) => c.command === "tee" || c.args.includes("tee"),
+    // The signing key is downloaded natively over HTTP (no curl/wget/gpg).
+    expect(fetchTextMock).toHaveBeenCalledWith(
+      "https://dl.google.com/linux/linux_signing_key.pub",
     );
-    expect(tee).toBeDefined();
-    expect(tee!.args).toContain("/etc/apt/sources.list.d/google.list");
-    const teeInput = (tee!.options?.input as Buffer | undefined)?.toString();
-    expect(teeInput).toContain(
-      "deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main",
+
+    // tee #1 installs the ASCII-armored keyring; the key is piped to stdin.
+    const keyringTee = calls.find((c) =>
+      c.args.includes("/usr/share/keyrings/google-chrome.asc"),
+    );
+    expect(keyringTee).toBeDefined();
+    const keyInput = (
+      keyringTee!.options?.input as Buffer | undefined
+    )?.toString();
+    expect(keyInput).toContain("BEGIN PGP PUBLIC KEY BLOCK");
+
+    // tee #2 writes google.list pinning the keyring via `signed-by=`.
+    const listTee = calls.find((c) =>
+      c.args.includes("/etc/apt/sources.list.d/google.list"),
+    );
+    expect(listTee).toBeDefined();
+    const listInput = (
+      listTee!.options?.input as Buffer | undefined
+    )?.toString();
+    expect(listInput).toContain(
+      "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main",
     );
 
     // apt-get update then install -y --no-install-recommends.
@@ -219,7 +240,7 @@ describe("installOnUnix - linux apt dependency installation", () => {
     expect(aptGetInstall!.args).toContain("google-chrome-stable");
   });
 
-  test("apps[] includes sudo/curl/jq/unzip when absent, package installed", async () => {
+  test("apps[] includes sudo/unzip when absent, package installed", async () => {
     // Only dpkg and chromeapp present; sudo/curl/jq/unzip all absent.
     setPresentCommands(["dpkg", "google-chrome-stable"]);
     execMock.mockImplementation(async (command: string, args?: string[]) => {
@@ -247,11 +268,13 @@ describe("installOnUnix - linux apt dependency installation", () => {
         "-y",
         "--no-install-recommends",
         "sudo",
-        "curl",
-        "jq",
         "unzip",
       ]),
     );
+    // curl/jq are no longer installed by the native implementation, even when
+    // absent from PATH.
+    expect(aptGetInstall!.args).not.toContain("curl");
+    expect(aptGetInstall!.args).not.toContain("jq");
     // chromeapp is present so it must NOT be added.
     expect(aptGetInstall!.args).not.toContain("google-chrome-stable");
   });
