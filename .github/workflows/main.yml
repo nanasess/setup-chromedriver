@@ -1,0 +1,64 @@
+name: "CI"
+
+# Orchestrator workflow. push / pull_request triggers live here only; the
+# individual test suites are reusable workflows (`on: workflow_call`) invoked
+# below, so a single CI run drives all of them instead of each firing its own
+# push / PR event. (Each suite also keeps `workflow_dispatch` for manual,
+# individual re-runs from the Actions UI.)
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+    paths:
+      - '**'
+      - '!*.md'
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - '**'
+      - '!*.md'
+  workflow_dispatch:
+
+jobs:
+  # Cheap fail-fast gate on a single runner: build the action and run the unit
+  # tests before fanning out to the ~60 OS / container matrix jobs below. A
+  # broken build or failing jest run is caught here in ~1-2 min instead of
+  # spinning up the expensive macOS / Windows / container suites.
+  # (format-check is intentionally NOT run here -- it is non-gating; keeping it
+  # out preserves the existing CI semantics.)
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: 24
+          # fork PR ではキャッシュ汚染 (信頼境界の共有) を避けるため pnpm
+          # キャッシュを無効化する。自リポジトリの push / PR では有効のまま。
+          cache: ${{ github.event.pull_request.head.repo.fork != true && 'pnpm' || '' }}
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm package
+      - run: pnpm test
+
+  # Heavy E2E / install suites. They only start once the cheap gate above is
+  # green, but run in parallel with each other.
+  nix-test:
+    needs: build-and-test
+    uses: ./.github/workflows/test.yml
+  windows-test:
+    needs: build-and-test
+    uses: ./.github/workflows/windows.yml
+  container-test:
+    needs: build-and-test
+    uses: ./.github/workflows/container-test.yml
+  legacy-test:
+    needs: build-and-test
+    uses: ./.github/workflows/legacy-test.yml
+  version-resolution-test:
+    needs: build-and-test
+    uses: ./.github/workflows/version-resolution-test.yml

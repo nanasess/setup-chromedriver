@@ -20,23 +20,13 @@ name: "Test ChromeDriver version resolution"
 # assert that `chromedriver --version` reports the expected version.
 #
 # `uses: ./` exercises the action code of the current commit (the native
-# TypeScript implementation on this branch / on master after #446 merges).
+# TypeScript implementation).
+#
+# Reusable workflow: orchestrated by main.yml. workflow_dispatch is kept so this
+# suite can still be run on its own from the Actions UI.
 
 on:
-  push:
-    branches:
-      - "*"
-    tags:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
-  pull_request:
-    branches:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
+  workflow_call:
   workflow_dispatch:
 
 jobs:

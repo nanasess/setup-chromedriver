@@ -1,19 +1,9 @@
 name: "Test chromedriver on *NIX"
+# Reusable workflow: orchestrated by main.yml. workflow_dispatch is kept so this
+# suite can still be run on its own from the Actions UI.
 on:
-  push:
-    branches:
-      - '*'
-    tags:
-      - '*'
-    paths:
-      - '**'
-      - '!*.md'
-  pull_request:
-    branches:
-      - '*'
-    paths:
-      - '**'
-      - '!*.md'
+  workflow_call:
+  workflow_dispatch:
 
 jobs:
   test:
@@ -28,13 +18,6 @@ jobs:
           - macos-latest
           - macos-15
           - macos-14
-        branch:
-          # TEMPORARY parity gate (issue #159): run @master (current shell) and
-          # 'now' (new native TypeScript) side-by-side to prove behavioral
-          # parity across the OS matrix. Re-comment 'master' once the TS rewrite
-          # is confirmed stable and released.
-          - 'master'
-          - 'now'
         chrome_version:
           - 'current'
           # FIXME https://github.com/nanasess/setup-chromedriver/issues/229
@@ -73,12 +56,6 @@ jobs:
         CHROME_VERSION=$("$CHROMEAPP" --version | cut -f 3 -d ' ')
         echo "CHROMEDRIVER_VERSION=$CHROME_VERSION" >> $GITHUB_ENV
     - uses: ./
-      if: matrix.branch == 'now'
-      with:
-        chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
-        chromeapp: ${{ env.CHROMEAPP }}
-    - uses: nanasess/setup-chromedriver@master
-      if: matrix.branch == 'master'
       with:
         chromedriver-version: ${{ env.CHROMEDRIVER_VERSION }}
         chromeapp: ${{ env.CHROMEAPP }}
@@ -103,13 +80,6 @@ jobs:
           - macos-latest
           - macos-15
           - macos-14
-        branch:
-          # TEMPORARY parity gate (issue #159): run @master (current shell) and
-          # 'now' (new native TypeScript) side-by-side to prove behavioral
-          # parity across the OS matrix. Re-comment 'master' once the TS rewrite
-          # is confirmed stable and released.
-          - 'master'
-          - 'now'
     steps:
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
     - if: startsWith(matrix.os, 'ubuntu')
@@ -134,9 +104,6 @@ jobs:
     #     # node_modules/.bin/ncc build $GITHUB_WORKSPACE/__tests__/chromedriver.js -o $GITHUB_WORKSPACE/__tests__
         # rm -rf node_modules
     - uses: ./
-      if: matrix.branch == 'now'
-    - uses: nanasess/setup-chromedriver@master
-      if: matrix.branch == 'master'
     - name: setup
       run: |
         "$CHROMEAPP" --version

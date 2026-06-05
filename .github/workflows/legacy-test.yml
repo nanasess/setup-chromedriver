@@ -12,24 +12,14 @@ name: "Test legacy ChromeDriver (<115)"
 # verifies what the action is actually responsible for: downloading and
 # installing the legacy binary, then reporting its version.
 #
-# `uses: ./` exercises the action code of the current commit (shell version on
-# master, TypeScript version once merged into issue-159).
+# `uses: ./` exercises the action code of the current commit (the native
+# TypeScript implementation).
+#
+# Reusable workflow: orchestrated by main.yml. workflow_dispatch is kept so this
+# suite can still be run on its own from the Actions UI.
 
 on:
-  push:
-    branches:
-      - "*"
-    tags:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
-  pull_request:
-    branches:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
+  workflow_call:
   workflow_dispatch:
 
 jobs:

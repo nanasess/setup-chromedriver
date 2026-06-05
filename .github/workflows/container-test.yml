@@ -14,22 +14,12 @@ name: "Test chromedriver in containers"
 # proves that, with that workaround in place, the action succeeds across common
 # container images. `uses: ./` exercises the action code of the current
 # commit, so it gates pushes / PRs the same way test.yml does.
+#
+# Reusable workflow: orchestrated by main.yml. workflow_dispatch is kept so this
+# suite can still be run on its own from the Actions UI.
 
 on:
-  push:
-    branches:
-      - "*"
-    tags:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
-  pull_request:
-    branches:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
+  workflow_call:
   workflow_dispatch:
 
 jobs:
