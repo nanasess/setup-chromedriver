@@ -109,7 +109,7 @@ steps:
 
 When a job runs inside a `container:` image (e.g. `ruby`, `elixir`, `node:slim`,
 `debian:slim`), the action sets up the Google Chrome apt repository and installs
-Chrome for you. It downloads Google's signing key over HTTP and registers it as
+Chrome for you. It downloads Google's signing key over HTTPS and registers it as
 a `signed-by` keyring — the modern scheme that works on recent Debian releases
 (12 "bookworm" and later), which removed the `apt-key` the action previously
 relied on (see issues

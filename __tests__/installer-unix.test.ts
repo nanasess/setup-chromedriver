@@ -193,7 +193,7 @@ describe("installOnUnix - linux apt dependency installation", () => {
     );
     expect(aptKey).toBeUndefined();
 
-    // The signing key is downloaded natively over HTTP (no curl/wget/gpg).
+    // The signing key is downloaded natively over HTTPS (no curl/wget/gpg).
     expect(fetchTextMock).toHaveBeenCalledWith(
       "https://dl.google.com/linux/linux_signing_key.pub",
     );
@@ -238,6 +238,30 @@ describe("installOnUnix - linux apt dependency installation", () => {
     expect(aptGetInstall!.args).toContain("--no-install-recommends");
     // APP was rewritten to google-chrome-stable and added to apps[].
     expect(aptGetInstall!.args).toContain("google-chrome-stable");
+  });
+
+  test("throws when the downloaded signing key is not a valid PGP block", async () => {
+    setPresentCommands(["sudo", "dpkg", "unzip"]);
+    execMock.mockImplementation(async (command: string, args?: string[]) => {
+      if (command === "dpkg" && args && args[0] === "-s") {
+        return 1; // not installed => key download path is taken
+      }
+      return 0;
+    });
+    // A 200 response with unexpected content (e.g. a redirect/error page).
+    fetchTextMock.mockResolvedValue("<html>not a key</html>");
+
+    await expect(
+      installOnUnix({ version: "131", arch: "linux64", chromeapp: "" }),
+    ).rejects.toThrow("not a valid PGP public key block");
+
+    // The keyring must NOT be written when the key fails validation.
+    const calls = execCalls();
+    expect(
+      calls.some((c) =>
+        c.args.includes("/usr/share/keyrings/google-chrome.asc"),
+      ),
+    ).toBe(false);
   });
 
   test("apps[] includes sudo/unzip when absent, package installed", async () => {

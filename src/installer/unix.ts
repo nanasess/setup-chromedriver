@@ -131,6 +131,15 @@ async function installLinuxDependencies(
     // GOOGLE_SIGNING_KEY_URL above. Download the signing key natively over HTTP
     // and install it as an ASCII-armored keyring.
     const signingKey = await fetchText(GOOGLE_SIGNING_KEY_URL);
+    // `fetchText` already throws on non-2xx / network errors, but a 200 response
+    // with unexpected content (e.g. a redirect or error page) would otherwise be
+    // written as-is and surface only later as a cryptic `apt-get update` failure.
+    // Validate the armored key up front so the error points at the real cause.
+    if (!signingKey || !signingKey.includes("BEGIN PGP PUBLIC KEY BLOCK")) {
+      throw new Error(
+        `Downloaded Google signing key from ${GOOGLE_SIGNING_KEY_URL} is not a valid PGP public key block.`,
+      );
+    }
     // Write the keyring with `tee` (under sudo when available), feeding the key
     // to stdin via @actions/exec's `input` option. Using stdin avoids `sh -c`
     // and keeps the key material out of the process arguments.
