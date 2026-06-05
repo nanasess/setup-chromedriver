@@ -29,6 +29,10 @@ on:
   workflow_call:
   workflow_dispatch:
 
+# 最小権限: checkout / アクション実行のみで書き込み不要。
+permissions:
+  contents: read
+
 jobs:
   resolve:
     name: "${{ matrix.os }} / ${{ matrix.case.version }}"
@@ -61,6 +65,8 @@ jobs:
       EXPECT: ${{ matrix.case.expect }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       # Windows: the action reads the installed Chrome's FileVersion up front,
       # so chromeapp must point at the pre-installed Chrome. (Left empty on

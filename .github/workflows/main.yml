@@ -22,6 +22,10 @@ on:
       - '!*.md'
   workflow_dispatch:
 
+# 最小権限: 全ジョブ checkout / build / test のみで書き込み不要。
+permissions:
+  contents: read
+
 jobs:
   # Cheap fail-fast gate on a single runner: build the action and run the unit
   # tests before fanning out to the ~60 OS / container matrix jobs below. A
@@ -33,6 +37,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v6.0.8
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
         with:
