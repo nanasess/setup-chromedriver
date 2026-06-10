@@ -1,4 +1,4 @@
-import { Builder, Capabilities, until } from "selenium-webdriver";
+import { Builder, until } from "selenium-webdriver";
 // ESM (the project is "type":"module") requires an explicit extension for this
 // CJS subpath; without it Node throws ERR_MODULE_NOT_FOUND under ts-node.
 import * as chrome from "selenium-webdriver/chrome.js";
@@ -14,7 +14,9 @@ import * as chrome from "selenium-webdriver/chrome.js";
     "--disable-gpu",
     "--disable-web-security",
     "--disable-features=VizDisplayCompositor",
-    "--remote-debugging-port=9222",
+    // NOTE: do NOT pin --remote-debugging-port. Recent ChromeDriver negotiates
+    // the DevTools port itself; a fixed port intermittently triggers
+    // "chrome not reachable" on the Windows CI runners (port reuse / races).
     "--disable-background-timer-throttling",
     "--disable-backgrounding-occluded-windows",
     "--disable-renderer-backgrounding",
@@ -34,10 +36,27 @@ import * as chrome from "selenium-webdriver/chrome.js";
     options.addArguments(`--user-data-dir=${userDataDir}`);
   }
 
-  const driver = new Builder()
-    .forBrowser("chrome")
-    .setChromeOptions(options)
-    .build();
+  // Session creation ("chrome not reachable" / "session not created") is the
+  // dominant flaky failure on the Windows CI runners. Retry a few times before
+  // giving up so a single transient hiccup does not fail the whole job.
+  const buildWithRetry = async (attempts = 3, delayMs = 2000) => {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        return await new Builder()
+          .forBrowser("chrome")
+          .setChromeOptions(options)
+          .build();
+      } catch (err) {
+        if (attempt >= attempts) throw err;
+        console.log(
+          `session creation failed (attempt ${attempt}/${attempts}), retrying in ${delayMs}ms: ${err}`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  };
+
+  const driver = await buildWithRetry();
   try {
     await driver.get("https://google.com");
     await driver.wait(until.titleContains("Google"), timeout);
