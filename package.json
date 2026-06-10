@@ -35,7 +35,7 @@
     "@types/node": "^25.9.1",
     "@types/selenium-webdriver": "^4.35.4",
     "@types/semver": "^7.7.1",
-    "@types/yauzl": "^2.10.3",
+    "@types/yauzl": "^3.3.0",
     "@vercel/ncc": "^0.38.4",
     "@jest/globals": "^30.3.0",
     "jest": "^30.3.0",
