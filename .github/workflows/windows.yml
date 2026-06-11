@@ -60,7 +60,6 @@ jobs:
         chromeapp: ${{ env.CHROMEAPP }}
     - name: setup
       run: |
-        chromedriver --url-base=/wd/hub &
         node_modules\.bin\ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
 
   test_default_version:
@@ -96,5 +95,4 @@ jobs:
     - uses: ./
     - name: setup
       run: |
-        chromedriver --url-base=/wd/hub &
         node_modules\.bin\ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
