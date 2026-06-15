@@ -55,14 +55,19 @@ The installation logic is implemented natively in TypeScript (no shell-out to
   API/URL selection, JSON extraction, fallback, default paths) reused by the
   installer modules. Covered by unit + shell-equivalence tests.
 - **src/installer/\*.ts**: The native installation layer described above.
-- **lib/setup-chromedriver.sh** / **lib/setup-chromedriver.ps1**: The legacy
-  shell/PowerShell implementations. These are **no longer on the execution
-  path** but are retained for one release cycle as an emergency rollback option.
 
-Behavioral parity with the original shell scripts is a hard requirement: install
-locations (`/usr/local/bin/chromedriver`, `C:\SeleniumWebDrivers\ChromeDriver`)
-are unchanged, and no `core.addPath` is added (the implicit PATH resolution via
-the well-known install directory is preserved).
+The legacy `lib/setup-chromedriver.sh` / `lib/setup-chromedriver.ps1` reference
+implementations were removed once the TypeScript port stabilized on v3; the
+TypeScript code under `src/` is now the single source of truth. (The
+shell-equivalence test in `__tests__/shell-logic.sh` is independent of those
+removed scripts and is retained as a regression guard for the pure helpers.)
+
+Install locations (`/usr/local/bin/chromedriver`,
+`C:\SeleniumWebDrivers\ChromeDriver`) are unchanged, and no `core.addPath` is
+added (the implicit PATH resolution via the well-known install directory is
+preserved). One deliberate behavior change from the original ps1: modern
+(>=115) Windows installs now use the native `win64` ChromeDriver build instead
+of `win32`.
 
 ### Build Process
 

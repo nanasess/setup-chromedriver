@@ -14,7 +14,7 @@ async function run() {
     const version = core.getInput("chromedriver-version", { required: false });
     const chromeapp = core.getInput("chromeapp", { required: false });
     const plat = process.platform;
-    let arch = "linux";
+    let arch: string;
     switch (plat) {
       case "win32":
         arch = plat;

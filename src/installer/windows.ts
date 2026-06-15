@@ -1,8 +1,8 @@
 /**
- * Windows ChromeDriver installer for the TypeScript rewrite of
- * setup-chromedriver.
+ * Windows ChromeDriver installer for setup-chromedriver.
  *
- * This reproduces the behavior of `lib/setup-chromedriver.ps1` 1:1:
+ * This implements the install flow originally provided by the (now-removed)
+ * setup-chromedriver.ps1 reference script:
  *
  *   1. Resolve the Chrome app path (default if not provided).
  *   2. Detect the full Chrome version via the PE FileVersion.
@@ -12,9 +12,9 @@
  *      `chromedriver_win32.zip`, extract it (binary at the zip root) and move
  *      `chromedriver.exe` to `C:\SeleniumWebDrivers\ChromeDriver`.
  *   5. Modern (>=115): resolve the Chrome-for-Testing download (with version3
- *      fallback), download and extract it (single-nested
- *      `chromedriver-win32/chromedriver.exe`) and move `chromedriver.exe` to
- *      `C:\SeleniumWebDrivers\ChromeDriver`.
+ *      fallback) for the native `win64` build, download and extract it
+ *      (single-nested `chromedriver-win64/chromedriver.exe`) and move
+ *      `chromedriver.exe` to `C:\SeleniumWebDrivers\ChromeDriver`.
  *
  * The install location (`C:\SeleniumWebDrivers\ChromeDriver`) is unchanged from
  * the original script, and no PATH manipulation (`core.addPath`) is performed,
@@ -81,18 +81,20 @@ export async function installOnWindows(opts: {
   // Step 5: modern (>=115).
   // If no version was requested, use the detected full version.
   const requestedVersion = opts.version || fullVersion;
-  const arch = "win32";
+  // Chrome for Testing publishes a native x64 `win64` build for every modern
+  // version, so we prefer it over the 32-bit `win32` build that the original
+  // ps1 hard-coded. (Legacy <115 ChromeDriver only shipped win32, which is why
+  // the legacy branch above keeps win32.)
+  const arch = "win64";
   const { version, url } = await resolveModernDownload(requestedVersion, arch);
   core.info(`Installing ChromeDriver ${version} for ${arch}`);
   core.info(`Downloading ${url}...`);
   const extractedDir = await downloadAndExtractZip(url);
-  // Modern Windows zip: single-nested chromedriver-win32/chromedriver.exe.
-  // (The original ps1 produced a double-nested path as a side effect of
-  // Expand-Archive -Force without -DestinationPath; tool-cache.extractZip
-  // honors the real zip structure, so we do not reproduce the double nesting.)
+  // Modern Windows zip: single-nested chromedriver-win64/chromedriver.exe.
+  // tool-cache.extractZip honors the real zip structure.
   const binary = path.join(
     extractedDir,
-    "chromedriver-win32",
+    "chromedriver-win64",
     "chromedriver.exe",
   );
   // Use cp, not mv: see the legacy branch above — io.mv (fs.rename) fails with

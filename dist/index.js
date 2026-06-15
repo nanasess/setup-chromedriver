@@ -37543,10 +37543,14 @@ function getIDToken(aud) {
 //# sourceMappingURL=core.js.map
 ;// CONCATENATED MODULE: ./lib/chromedriver-helper.js
 /**
- * Pure functions extracted from setup-chromedriver.sh / setup-chromedriver.ps1
- * These encode the exact logic of the shell scripts so that:
- * 1. We can write fast, offline unit tests against them
- * 2. They become the production implementation when we rewrite in TypeScript
+ * Pure helper functions for Chrome / ChromeDriver version parsing, platform
+ * mapping and download-URL construction.
+ *
+ * These were originally derived from the now-removed setup-chromedriver.sh /
+ * setup-chromedriver.ps1 reference implementations and are the production
+ * source of truth for that logic. They are deliberately side-effect free so
+ * they can be covered by fast, offline unit tests (and the shell-equivalence
+ * test in __tests__/).
  */
 // ---------------------------------------------------------------------------
 // Version parsing
@@ -38675,13 +38679,14 @@ async function resolveModernDownload(version, arch) {
     let resolvedVersion = version;
     let url = extractDriverUrlFromJson(json, resolvedVersion, arch);
     if (!url) {
-        // Shell fallback: `VERSION3=$(cut -d '.' -f 1-3 <<<"${VERSION}")`.
-        // We mirror `cut` semantics (take the first up to three dot-separated
-        // fields) rather than the stricter `parseVersion3` helper, which throws on
-        // inputs with fewer than three parts. This preserves parity for partial
-        // inputs such as a major-only `chromedriver-version` (e.g. "120"), where
-        // the shell still falls back to the latest matching release instead of
-        // failing.
+        // version3 fallback: take the first up to three dot-separated fields and
+        // resolve the latest matching release. We use this lenient `cut`-style
+        // truncation rather than the stricter `parseVersion3` helper (which throws
+        // on inputs with fewer than three parts) so that partial inputs such as a
+        // major-only `chromedriver-version` (e.g. "120") still fall back to the
+        // latest matching release instead of failing. This is the canonical
+        // behavior: for an unusual 3-part input ("131.0") it keeps all three given
+        // fields ("131.0") rather than stripping the last segment.
         const version3 = version.split(".").slice(0, 3).join(".");
         const fallbackVersion = findFallbackVersion(json, version3);
         if (fallbackVersion) {
@@ -38706,17 +38711,18 @@ async function resolveLegacyVersion(majorVersion) {
 
 ;// CONCATENATED MODULE: ./lib/installer/unix.js
 /**
- * Linux / macOS installer for the TypeScript rewrite of setup-chromedriver.
+ * Linux / macOS installer for setup-chromedriver.
  *
- * This module reproduces the behavior of `lib/setup-chromedriver.sh` 1:1:
+ * This module implements the install flow originally provided by the
+ * (now-removed) setup-chromedriver.sh reference script:
  *
- *   - apt dependency installation on linux64 (apt-key / google.list / apt-get),
- *     reproduced via `@actions/exec` so that runner behavior is unchanged.
+ *   - apt dependency installation on linux64 (apt-key / google.list / apt-get)
+ *     via `@actions/exec`.
  *   - Chrome major-version detection and the legacy (<115) vs modern (>=115)
  *     download / install split.
  *   - Installation to `/usr/local/bin/chromedriver` via `mv` (with `sudo` when
- *     available), preserving the implicit PATH resolution of the original
- *     script. We do NOT add `core.addPath` here, matching the shell script.
+ *     available). We deliberately do NOT add `core.addPath` here, preserving
+ *     the implicit PATH resolution via the well-known install directory.
  *
  * The pure parsing / URL / JSON logic lives in `../chromedriver-helper` and is
  * reused here rather than reimplemented. HTTP, download/extract and version
@@ -38762,11 +38768,13 @@ async function commandExists(command) {
     return found !== "";
 }
 /**
- * Reproduce the apt dependency installation block of setup-chromedriver.sh for
- * the linux64 arch.
+ * Install the apt dependencies required for the linux64 arch: the Chrome
+ * package itself (via the Google apt repository) plus `unzip` and, when
+ * missing, `sudo`.
  *
- * Returns the (possibly rewritten) chromeapp value, mirroring the shell's
- * reassignment of `APP=google-chrome-stable` when the package is missing.
+ * Resolves to `void`. The `chromeapp` default (`google-chrome-stable`) is
+ * applied by the caller (`installOnUnix`) so that it propagates to version
+ * detection as well; this helper only consumes the resolved value.
  */
 async function installLinuxDependencies(sudo, chromeapp) {
     // `if [[ -z "${CHROMEAPP}" ]]; then CHROMEAPP=google-chrome-stable; fi`
@@ -38805,25 +38813,25 @@ async function installLinuxDependencies(sudo, chromeapp) {
         // `APP=google-chrome-stable`
         app = "google-chrome-stable";
     }
-    // Build the `apps=()` array exactly as the shell script does.
+    // Build the list of apt packages to install when missing.
+    //
+    // The original shell script also installed `curl` and `jq` for its
+    // `curl | jq` Chrome-for-Testing JSON pipeline. The TypeScript runtime
+    // fetches and parses that JSON natively (typed-rest-client in http.ts), so
+    // neither binary is needed and we no longer install them. `unzip` is still
+    // required because @actions/tool-cache shells out to it when extracting the
+    // downloaded archive.
     const apps = [];
-    // `test -z "${sudo}" && apps+=(sudo)`
+    // Install sudo when it is not already present (needed by the runWithSudo
+    // calls above, which fall back to running unprivileged when sudo is absent).
     if (!sudo) {
         apps.push("sudo");
     }
-    // `type -a curl > /dev/null 2>&1 || apps+=(curl)`
-    if (!(await commandExists("curl"))) {
-        apps.push("curl");
-    }
-    // `type -a "${CHROMEAPP}" > /dev/null 2>&1 || apps+=("${APP}")`
+    // Install the Chrome package when the browser binary is not on PATH.
     if (!(await commandExists(chromeApp))) {
         apps.push(app);
     }
-    // `type -a jq > /dev/null 2>&1 || apps+=(jq)`
-    if (!(await commandExists("jq"))) {
-        apps.push("jq");
-    }
-    // `type -a unzip > /dev/null 2>&1 || apps+=(unzip)`
+    // Install unzip when missing (used by tool-cache's archive extraction).
     if (!(await commandExists("unzip"))) {
         apps.push("unzip");
     }
@@ -38850,7 +38858,7 @@ async function runWithSudo(sudo, command, args, options) {
     }
 }
 /**
- * Install ChromeDriver on Linux / macOS, reproducing setup-chromedriver.sh.
+ * Install ChromeDriver on Linux / macOS.
  */
 async function installOnUnix(opts) {
     const platform = process.platform;
@@ -38874,15 +38882,16 @@ async function installOnUnix(opts) {
         chromeapp = getDefaultChromePath("darwin");
     }
     // CHROME_VERSION (major): from VERSION when provided, else from the app.
+    // When detected from the app, cache the full version string so the modern
+    // (>=115) path below can reuse it instead of probing `--version` again.
     let majorVersion;
+    let detectedFullVersion;
     if (version) {
-        // `cut -d '.' -f 1 <<<"${VERSION}"`
         majorVersion = parseMajorVersion(version);
     }
     else {
-        // `"${CHROMEAPP}" --version | cut -d ' ' -f 3 | cut -d '.' -f 1`
-        const fullVersion = await detectFullChromeVersion(platform, chromeapp);
-        majorVersion = parseMajorVersion(fullVersion);
+        detectedFullVersion = await detectFullChromeVersion(platform, chromeapp);
+        majorVersion = parseMajorVersion(detectedFullVersion);
     }
     info(`CHROME_VERSION=${majorVersion}`);
     const installPath = getInstallPath(platform);
@@ -38911,9 +38920,12 @@ async function installOnUnix(opts) {
     // -------------------------------------------------------------------------
     // Modern (>=115)
     // -------------------------------------------------------------------------
-    // `if [[ -z "${VERSION}" ]]; then VERSION=$("${CHROMEAPP}" --version | cut -d ' ' -f 3); fi`
+    // When no version was requested, reuse the full version detected above for
+    // the major-version check rather than probing `<chromeapp> --version` again.
     if (!version) {
-        version = await detectFullChromeVersion(platform, chromeapp);
+        version =
+            detectedFullVersion ??
+                (await detectFullChromeVersion(platform, chromeapp));
         info(`VERSION=${version}`);
     }
     // `if [[ "${ARCH}" == "mac64" ]]; then ARCH="mac-x64"; fi`
@@ -38945,10 +38957,10 @@ async function installOnUnix(opts) {
 
 ;// CONCATENATED MODULE: ./lib/installer/windows.js
 /**
- * Windows ChromeDriver installer for the TypeScript rewrite of
- * setup-chromedriver.
+ * Windows ChromeDriver installer for setup-chromedriver.
  *
- * This reproduces the behavior of `lib/setup-chromedriver.ps1` 1:1:
+ * This implements the install flow originally provided by the (now-removed)
+ * setup-chromedriver.ps1 reference script:
  *
  *   1. Resolve the Chrome app path (default if not provided).
  *   2. Detect the full Chrome version via the PE FileVersion.
@@ -38958,9 +38970,9 @@ async function installOnUnix(opts) {
  *      `chromedriver_win32.zip`, extract it (binary at the zip root) and move
  *      `chromedriver.exe` to `C:\SeleniumWebDrivers\ChromeDriver`.
  *   5. Modern (>=115): resolve the Chrome-for-Testing download (with version3
- *      fallback), download and extract it (single-nested
- *      `chromedriver-win32/chromedriver.exe`) and move `chromedriver.exe` to
- *      `C:\SeleniumWebDrivers\ChromeDriver`.
+ *      fallback) for the native `win64` build, download and extract it
+ *      (single-nested `chromedriver-win64/chromedriver.exe`) and move
+ *      `chromedriver.exe` to `C:\SeleniumWebDrivers\ChromeDriver`.
  *
  * The install location (`C:\SeleniumWebDrivers\ChromeDriver`) is unchanged from
  * the original script, and no PATH manipulation (`core.addPath`) is performed,
@@ -39006,16 +39018,18 @@ async function installOnWindows(opts) {
     // Step 5: modern (>=115).
     // If no version was requested, use the detected full version.
     const requestedVersion = opts.version || fullVersion;
-    const arch = "win32";
+    // Chrome for Testing publishes a native x64 `win64` build for every modern
+    // version, so we prefer it over the 32-bit `win32` build that the original
+    // ps1 hard-coded. (Legacy <115 ChromeDriver only shipped win32, which is why
+    // the legacy branch above keeps win32.)
+    const arch = "win64";
     const { version, url } = await resolveModernDownload(requestedVersion, arch);
     info(`Installing ChromeDriver ${version} for ${arch}`);
     info(`Downloading ${url}...`);
     const extractedDir = await downloadAndExtractZip(url);
-    // Modern Windows zip: single-nested chromedriver-win32/chromedriver.exe.
-    // (The original ps1 produced a double-nested path as a side effect of
-    // Expand-Archive -Force without -DestinationPath; tool-cache.extractZip
-    // honors the real zip structure, so we do not reproduce the double nesting.)
-    const binary = external_path_.join(extractedDir, "chromedriver-win32", "chromedriver.exe");
+    // Modern Windows zip: single-nested chromedriver-win64/chromedriver.exe.
+    // tool-cache.extractZip honors the real zip structure.
+    const binary = external_path_.join(extractedDir, "chromedriver-win64", "chromedriver.exe");
     // Use cp, not mv: see the legacy branch above — io.mv (fs.rename) fails with
     // EXDEV when the temp drive (D:) and the install path (C:) differ.
     await io_cp(binary, external_path_.join(installPath, "chromedriver.exe"), {
@@ -39037,7 +39051,7 @@ async function run() {
         const version = getInput("chromedriver-version", { required: false });
         const chromeapp = getInput("chromeapp", { required: false });
         const plat = process.platform;
-        let arch = "linux";
+        let arch;
         switch (plat) {
             case "win32":
                 arch = plat;

@@ -1,15 +1,16 @@
 /**
- * Linux / macOS installer for the TypeScript rewrite of setup-chromedriver.
+ * Linux / macOS installer for setup-chromedriver.
  *
- * This module reproduces the behavior of `lib/setup-chromedriver.sh` 1:1:
+ * This module implements the install flow originally provided by the
+ * (now-removed) setup-chromedriver.sh reference script:
  *
- *   - apt dependency installation on linux64 (apt-key / google.list / apt-get),
- *     reproduced via `@actions/exec` so that runner behavior is unchanged.
+ *   - apt dependency installation on linux64 (apt-key / google.list / apt-get)
+ *     via `@actions/exec`.
  *   - Chrome major-version detection and the legacy (<115) vs modern (>=115)
  *     download / install split.
  *   - Installation to `/usr/local/bin/chromedriver` via `mv` (with `sudo` when
- *     available), preserving the implicit PATH resolution of the original
- *     script. We do NOT add `core.addPath` here, matching the shell script.
+ *     available). We deliberately do NOT add `core.addPath` here, preserving
+ *     the implicit PATH resolution via the well-known install directory.
  *
  * The pure parsing / URL / JSON logic lives in `../chromedriver-helper` and is
  * reused here rather than reimplemented. HTTP, download/extract and version
@@ -82,11 +83,13 @@ async function commandExists(command: string): Promise<boolean> {
 }
 
 /**
- * Reproduce the apt dependency installation block of setup-chromedriver.sh for
- * the linux64 arch.
+ * Install the apt dependencies required for the linux64 arch: the Chrome
+ * package itself (via the Google apt repository) plus `unzip` and, when
+ * missing, `sudo`.
  *
- * Returns the (possibly rewritten) chromeapp value, mirroring the shell's
- * reassignment of `APP=google-chrome-stable` when the package is missing.
+ * Resolves to `void`. The `chromeapp` default (`google-chrome-stable`) is
+ * applied by the caller (`installOnUnix`) so that it propagates to version
+ * detection as well; this helper only consumes the resolved value.
  */
 async function installLinuxDependencies(
   sudo: string,
@@ -133,25 +136,25 @@ async function installLinuxDependencies(
     app = "google-chrome-stable";
   }
 
-  // Build the `apps=()` array exactly as the shell script does.
+  // Build the list of apt packages to install when missing.
+  //
+  // The original shell script also installed `curl` and `jq` for its
+  // `curl | jq` Chrome-for-Testing JSON pipeline. The TypeScript runtime
+  // fetches and parses that JSON natively (typed-rest-client in http.ts), so
+  // neither binary is needed and we no longer install them. `unzip` is still
+  // required because @actions/tool-cache shells out to it when extracting the
+  // downloaded archive.
   const apps: string[] = [];
-  // `test -z "${sudo}" && apps+=(sudo)`
+  // Install sudo when it is not already present (needed by the runWithSudo
+  // calls above, which fall back to running unprivileged when sudo is absent).
   if (!sudo) {
     apps.push("sudo");
   }
-  // `type -a curl > /dev/null 2>&1 || apps+=(curl)`
-  if (!(await commandExists("curl"))) {
-    apps.push("curl");
-  }
-  // `type -a "${CHROMEAPP}" > /dev/null 2>&1 || apps+=("${APP}")`
+  // Install the Chrome package when the browser binary is not on PATH.
   if (!(await commandExists(chromeApp))) {
     apps.push(app);
   }
-  // `type -a jq > /dev/null 2>&1 || apps+=(jq)`
-  if (!(await commandExists("jq"))) {
-    apps.push("jq");
-  }
-  // `type -a unzip > /dev/null 2>&1 || apps+=(unzip)`
+  // Install unzip when missing (used by tool-cache's archive extraction).
   if (!(await commandExists("unzip"))) {
     apps.push("unzip");
   }
@@ -190,7 +193,7 @@ async function runWithSudo(
 }
 
 /**
- * Install ChromeDriver on Linux / macOS, reproducing setup-chromedriver.sh.
+ * Install ChromeDriver on Linux / macOS.
  */
 export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
   const platform = process.platform;
@@ -218,14 +221,15 @@ export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
   }
 
   // CHROME_VERSION (major): from VERSION when provided, else from the app.
+  // When detected from the app, cache the full version string so the modern
+  // (>=115) path below can reuse it instead of probing `--version` again.
   let majorVersion: number;
+  let detectedFullVersion: string | undefined;
   if (version) {
-    // `cut -d '.' -f 1 <<<"${VERSION}"`
     majorVersion = parseMajorVersion(version);
   } else {
-    // `"${CHROMEAPP}" --version | cut -d ' ' -f 3 | cut -d '.' -f 1`
-    const fullVersion = await detectFullChromeVersion(platform, chromeapp);
-    majorVersion = parseMajorVersion(fullVersion);
+    detectedFullVersion = await detectFullChromeVersion(platform, chromeapp);
+    majorVersion = parseMajorVersion(detectedFullVersion);
   }
   core.info(`CHROME_VERSION=${majorVersion}`);
 
@@ -257,9 +261,12 @@ export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
   // -------------------------------------------------------------------------
   // Modern (>=115)
   // -------------------------------------------------------------------------
-  // `if [[ -z "${VERSION}" ]]; then VERSION=$("${CHROMEAPP}" --version | cut -d ' ' -f 3); fi`
+  // When no version was requested, reuse the full version detected above for
+  // the major-version check rather than probing `<chromeapp> --version` again.
   if (!version) {
-    version = await detectFullChromeVersion(platform, chromeapp);
+    version =
+      detectedFullVersion ??
+      (await detectFullChromeVersion(platform, chromeapp));
     core.info(`VERSION=${version}`);
   }
   // `if [[ "${ARCH}" == "mac64" ]]; then ARCH="mac-x64"; fi`

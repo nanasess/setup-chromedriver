@@ -5,11 +5,12 @@
  * (`./version`), zip download & extraction (`./download`) and file moves
  * (`@actions/io`). No network access or filesystem mutation occurs.
  *
- * These tests assert parity with `lib/setup-chromedriver.ps1`:
+ * These tests assert the Windows installer behavior:
  *   - the Chrome FileVersion is detected (via version.ts),
  *   - legacy (<115) vs modern (>=115) branching,
- *   - the modern Windows zip is single-nested
- *     (`chromedriver-win32/chromedriver.exe`), and
+ *   - the modern download uses the native `win64` build and the zip is
+ *     single-nested (`chromedriver-win64/chromedriver.exe`), while the legacy
+ *     branch keeps `win32`, and
  *   - the binary is installed to `C:\SeleniumWebDrivers\ChromeDriver`.
  */
 
@@ -64,7 +65,7 @@ describe("installOnWindows (modern, >=115)", () => {
     mockedDetectFullChromeVersion.mockResolvedValue("120.0.6099.109");
     mockedResolveModernDownload.mockResolvedValue({
       version: "120.0.6099.109",
-      url: "https://example.com/chromedriver-win32.zip",
+      url: "https://example.com/chromedriver-win64.zip",
     });
   });
 
@@ -98,7 +99,7 @@ describe("installOnWindows (modern, >=115)", () => {
 
     expect(mockedResolveModernDownload).toHaveBeenCalledWith(
       "120.0.6099.109",
-      "win32",
+      "win64",
     );
     expect(mockedResolveLegacyVersion).not.toHaveBeenCalled();
   });
@@ -108,18 +109,18 @@ describe("installOnWindows (modern, >=115)", () => {
 
     expect(mockedResolveModernDownload).toHaveBeenCalledWith(
       "121.0.6167.85",
-      "win32",
+      "win64",
     );
   });
 
-  it("copies the single-nested chromedriver-win32/chromedriver.exe to the install path", async () => {
+  it("copies the single-nested chromedriver-win64/chromedriver.exe to the install path", async () => {
     await installOnWindows({ version: "", chromeapp: "" });
 
     expect(mockedDownloadAndExtractZip).toHaveBeenCalledWith(
-      "https://example.com/chromedriver-win32.zip",
+      "https://example.com/chromedriver-win64.zip",
     );
     expect(mockedIo.cp).toHaveBeenCalledWith(
-      path.join("C:\\extracted", "chromedriver-win32", "chromedriver.exe"),
+      path.join("C:\\extracted", "chromedriver-win64", "chromedriver.exe"),
       path.join(INSTALL_PATH, "chromedriver.exe"),
       { force: true },
     );

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 #
-# Extract pure logic from setup-chromedriver.sh and output results as KEY=VALUE pairs.
-# This script is used by the equivalence test to verify TypeScript functions
-# produce identical results to the shell script logic.
+# Standalone reimplementation of the pure version/URL logic that the original
+# (now-removed) setup-chromedriver.sh used, emitted as KEY=VALUE pairs.
+# This script is used by the equivalence test as an independent oracle to verify
+# the TypeScript helper functions produce identical results.
 #
 # Usage: bash __tests__/shell-logic.sh
 #
