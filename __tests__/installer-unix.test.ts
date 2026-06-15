@@ -5,10 +5,9 @@
  * ./download and ./version. No network, no filesystem access, no real
  * subprocess execution occurs.
  *
- * The assertions verify parity with lib/setup-chromedriver.sh, except for the
- * apt `apps[]` list, which intentionally omits `curl`/`jq` (unused by the
- * native implementation):
- *   - apt `apps[]` construction (sudo / chromeapp / unzip absence)
+ * The assertions verify the Unix installer behavior:
+ *   - apt dependency list construction (sudo / chromeapp / unzip absence; curl
+ *     and jq are intentionally not installed, unused by the native code)
  *   - dpkg-not-installed -> signed-by keyring + google.list tee + APP rewrite
  *   - legacy (<115) vs modern (>=115) zip path resolution
  *   - sudo present vs absent in the `mv` command
@@ -428,6 +427,23 @@ describe("installOnUnix - modern (>=115)", () => {
     const move = findMove();
     expect(move.source).toBe(
       path.join("/tmp/mac", "chromedriver-mac-x64", "chromedriver"),
+    );
+  });
+
+  test("empty chromeapp + empty version on mac defaults to the macOS Chrome path for version detection", async () => {
+    // Coverage for the darwin default: when both chromeapp and version are
+    // empty, installOnUnix must fall back to getDefaultChromePath("darwin")
+    // and use it for `--version` detection rather than probing an empty path.
+    setPresentCommands([]); // not linux64 => no apt block
+    execMock.mockResolvedValue(0);
+    downloadAndExtractZip.mockResolvedValue("/tmp/mac");
+    detectFullChromeVersion.mockResolvedValue("131.0.6778.204");
+
+    await installOnUnix({ version: "", arch: "mac-arm64", chromeapp: "" });
+
+    expect(detectFullChromeVersion).toHaveBeenCalledWith(
+      process.platform,
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     );
   });
 

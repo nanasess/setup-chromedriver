@@ -108,13 +108,14 @@ export async function resolveModernDownload(
   let url = extractDriverUrlFromJson(json, resolvedVersion, arch);
 
   if (!url) {
-    // Shell fallback: `VERSION3=$(cut -d '.' -f 1-3 <<<"${VERSION}")`.
-    // We mirror `cut` semantics (take the first up to three dot-separated
-    // fields) rather than the stricter `parseVersion3` helper, which throws on
-    // inputs with fewer than three parts. This preserves parity for partial
-    // inputs such as a major-only `chromedriver-version` (e.g. "120"), where
-    // the shell still falls back to the latest matching release instead of
-    // failing.
+    // version3 fallback: take the first up to three dot-separated fields and
+    // resolve the latest matching release. We use this lenient `cut`-style
+    // truncation rather than the stricter `parseVersion3` helper (which throws
+    // on inputs with fewer than three parts) so that partial inputs such as a
+    // major-only `chromedriver-version` (e.g. "120") still fall back to the
+    // latest matching release instead of failing. This is the canonical
+    // behavior: for an unusual 3-part input ("131.0") it keeps all three given
+    // fields ("131.0") rather than stripping the last segment.
     const version3 = version.split(".").slice(0, 3).join(".");
     const fallbackVersion = findFallbackVersion(json, version3);
     if (fallbackVersion) {
