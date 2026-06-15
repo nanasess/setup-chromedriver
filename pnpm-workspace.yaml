@@ -2,15 +2,19 @@
 # 単一パッケージでも pnpm の設定ファイルとして機能する。
 
 # 公開直後の新バージョンを採用しないクールダウン (分単位)。
-# 乗っ取り直後に公開された悪性バージョンの自動取り込みを防ぐ。4320 分 = 3 日。
-# 悪性版は公開後数時間〜数日で検知・yank される事が多いため 3 日確保する。
+# 乗っ取り直後に公開された悪性バージョンの自動取り込みを防ぐ。1440 分 = 1 日。
+# Dependabot は pnpm の minimumReleaseAge を認識せず、窓内の新版で即 PR を
+# 作るため install (--frozen-lockfile) が ERR_PNPM_NO_MATCHING_VERSION で
+# 失敗する。そこで pnpm 側はインストール可能になる下限の 1 日に抑え、
+# PR 作成の遅延は Dependabot 側の cooldown (.github/dependabot.yml, 3 日)
+# に任せる。cooldown >= この minimumReleaseAge を満たす限り install は通る。
 # 緊急のセキュリティ修正を即時採用したい場合は minimumReleaseAgeExclude で
 # 対象パッケージを個別に除外できる。
-minimumReleaseAge: 4320
+minimumReleaseAge: 1440
 
 # クールダウンの適用除外。
 # browserslist エコシステムのブラウザ互換データ群はほぼ毎日リリースされる
-# ため、3 日クールダウンだと解決のたびに窓内の最新版を掴んで CI の
+# ため、クールダウンだと解決のたびに窓内の最新版を掴んで CI の
 # --frozen-lockfile が失敗する (pnpm の minimumReleaseAge は古い版へ
 # 自動降格せず検証で弾く)。これらは dev 専用・データのみで dist には
 # 一切バンドルされない (公開される action に含まれない) ため、供給網

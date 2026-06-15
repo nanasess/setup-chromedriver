@@ -8,7 +8,7 @@ import './sourcemap-register.cjs';import { createRequire as __WEBPACK_EXTERNAL_c
 
 var bind = __nccwpck_require__(8833);
 
-var $apply = __nccwpck_require__(4894);
+var $apply = __nccwpck_require__(2513);
 var $call = __nccwpck_require__(3184);
 var $reflectApply = __nccwpck_require__(6499);
 
@@ -18,7 +18,7 @@ module.exports = $reflectApply || bind.call($call, $apply);
 
 /***/ }),
 
-/***/ 4894:
+/***/ 2513:
 /***/ ((module) => {
 
 
@@ -411,7 +411,7 @@ var getProto = __nccwpck_require__(2977);
 var $ObjectGPO = __nccwpck_require__(8673);
 var $ReflectGPO = __nccwpck_require__(6643);
 
-var $apply = __nccwpck_require__(4894);
+var $apply = __nccwpck_require__(2513);
 var $call = __nccwpck_require__(3184);
 
 var needsEval = {};
@@ -2745,7 +2745,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 524:
+/***/ 9443:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -2885,17 +2885,17 @@ class Comparator {
 
 module.exports = Comparator
 
-const parseOptions = __nccwpck_require__(3007)
-const { safeRe: re, t } = __nccwpck_require__(9978)
-const cmp = __nccwpck_require__(8011)
-const debug = __nccwpck_require__(572)
-const SemVer = __nccwpck_require__(4384)
-const Range = __nccwpck_require__(6979)
+const parseOptions = __nccwpck_require__(8084)
+const { safeRe: re, t } = __nccwpck_require__(2415)
+const cmp = __nccwpck_require__(9846)
+const debug = __nccwpck_require__(6791)
+const SemVer = __nccwpck_require__(8875)
+const Range = __nccwpck_require__(4894)
 
 
 /***/ }),
 
-/***/ 6979:
+/***/ 4894:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -3117,13 +3117,13 @@ class Range {
 
 module.exports = Range
 
-const LRU = __nccwpck_require__(8734)
+const LRU = __nccwpck_require__(7111)
 const cache = new LRU()
 
-const parseOptions = __nccwpck_require__(3007)
-const Comparator = __nccwpck_require__(524)
-const debug = __nccwpck_require__(572)
-const SemVer = __nccwpck_require__(4384)
+const parseOptions = __nccwpck_require__(8084)
+const Comparator = __nccwpck_require__(9443)
+const debug = __nccwpck_require__(6791)
+const SemVer = __nccwpck_require__(8875)
 const {
   safeRe: re,
   src,
@@ -3131,8 +3131,8 @@ const {
   comparatorTrimReplace,
   tildeTrimReplace,
   caretTrimReplace,
-} = __nccwpck_require__(9978)
-const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = __nccwpck_require__(134)
+} = __nccwpck_require__(2415)
+const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = __nccwpck_require__(3693)
 
 // unbounded global build-metadata stripper used by parseRange
 const BUILDSTRIPRE = new RegExp(src[t.BUILD], 'g')
@@ -3466,17 +3466,33 @@ const testSet = (set, version, options) => {
 
 /***/ }),
 
-/***/ 4384:
+/***/ 8875:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const debug = __nccwpck_require__(572)
-const { MAX_LENGTH, MAX_SAFE_INTEGER } = __nccwpck_require__(134)
-const { safeRe: re, t } = __nccwpck_require__(9978)
+const debug = __nccwpck_require__(6791)
+const { MAX_LENGTH, MAX_SAFE_INTEGER } = __nccwpck_require__(3693)
+const { safeRe: re, t } = __nccwpck_require__(2415)
 
-const parseOptions = __nccwpck_require__(3007)
-const { compareIdentifiers } = __nccwpck_require__(1271)
+const parseOptions = __nccwpck_require__(8084)
+const { compareIdentifiers } = __nccwpck_require__(5060)
+
+const isPrereleaseIdentifier = (prerelease, identifier) => {
+  const identifiers = identifier.split('.')
+  if (identifiers.length > prerelease.length) {
+    return false
+  }
+
+  for (let i = 0; i < identifiers.length; i++) {
+    if (compareIdentifiers(prerelease[i], identifiers[i]) !== 0) {
+      return false
+    }
+  }
+
+  return true
+}
+
 class SemVer {
   constructor (version, options) {
     options = parseOptions(options)
@@ -3780,8 +3796,9 @@ class SemVer {
           if (identifierBase === false) {
             prerelease = [identifier]
           }
-          if (compareIdentifiers(this.prerelease[0], identifier) === 0) {
-            if (isNaN(this.prerelease[1])) {
+          if (isPrereleaseIdentifier(this.prerelease, identifier)) {
+            const prereleaseBase = this.prerelease[identifier.split('.').length]
+            if (isNaN(prereleaseBase)) {
               this.prerelease = prerelease
             }
           } else {
@@ -3806,12 +3823,12 @@ module.exports = SemVer
 
 /***/ }),
 
-/***/ 7426:
+/***/ 7831:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(9308)
+const parse = __nccwpck_require__(6353)
 const clean = (version, options) => {
   const s = parse(version.trim().replace(/^[=v]+/, ''), options)
   return s ? s.version : null
@@ -3821,17 +3838,17 @@ module.exports = clean
 
 /***/ }),
 
-/***/ 8011:
+/***/ 9846:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const eq = __nccwpck_require__(7973)
-const neq = __nccwpck_require__(5715)
-const gt = __nccwpck_require__(1640)
-const gte = __nccwpck_require__(4597)
-const lt = __nccwpck_require__(2079)
-const lte = __nccwpck_require__(5340)
+const eq = __nccwpck_require__(1930)
+const neq = __nccwpck_require__(7534)
+const gt = __nccwpck_require__(5367)
+const gte = __nccwpck_require__(6308)
+const lt = __nccwpck_require__(4912)
+const lte = __nccwpck_require__(4877)
 
 const cmp = (a, op, b, loose) => {
   switch (op) {
@@ -3882,14 +3899,14 @@ module.exports = cmp
 
 /***/ }),
 
-/***/ 6894:
+/***/ 409:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
-const parse = __nccwpck_require__(9308)
-const { safeRe: re, t } = __nccwpck_require__(9978)
+const SemVer = __nccwpck_require__(8875)
+const parse = __nccwpck_require__(6353)
+const { safeRe: re, t } = __nccwpck_require__(2415)
 
 const coerce = (version, options) => {
   if (version instanceof SemVer) {
@@ -3951,12 +3968,12 @@ module.exports = coerce
 
 /***/ }),
 
-/***/ 3129:
+/***/ 7136:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 const compareBuild = (a, b, loose) => {
   const versionA = new SemVer(a, loose)
   const versionB = new SemVer(b, loose)
@@ -3967,24 +3984,24 @@ module.exports = compareBuild
 
 /***/ }),
 
-/***/ 1319:
+/***/ 5706:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const compareLoose = (a, b) => compare(a, b, true)
 module.exports = compareLoose
 
 
 /***/ }),
 
-/***/ 2364:
+/***/ 4885:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 const compare = (a, b, loose) =>
   new SemVer(a, loose).compare(new SemVer(b, loose))
 
@@ -3993,12 +4010,12 @@ module.exports = compare
 
 /***/ }),
 
-/***/ 6396:
+/***/ 6023:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(9308)
+const parse = __nccwpck_require__(6353)
 
 const diff = (version1, version2) => {
   const v1 = parse(version1, null, true)
@@ -4060,48 +4077,48 @@ module.exports = diff
 
 /***/ }),
 
-/***/ 7973:
+/***/ 1930:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const eq = (a, b, loose) => compare(a, b, loose) === 0
 module.exports = eq
 
 
 /***/ }),
 
-/***/ 1640:
+/***/ 5367:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const gt = (a, b, loose) => compare(a, b, loose) > 0
 module.exports = gt
 
 
 /***/ }),
 
-/***/ 4597:
+/***/ 6308:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const gte = (a, b, loose) => compare(a, b, loose) >= 0
 module.exports = gte
 
 
 /***/ }),
 
-/***/ 4763:
+/***/ 7378:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 
 const inc = (version, release, options, identifier, identifierBase) => {
   if (typeof (options) === 'string') {
@@ -4124,72 +4141,72 @@ module.exports = inc
 
 /***/ }),
 
-/***/ 2079:
+/***/ 4912:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const lt = (a, b, loose) => compare(a, b, loose) < 0
 module.exports = lt
 
 
 /***/ }),
 
-/***/ 5340:
+/***/ 4877:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const lte = (a, b, loose) => compare(a, b, loose) <= 0
 module.exports = lte
 
 
 /***/ }),
 
-/***/ 8782:
+/***/ 8047:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 const major = (a, loose) => new SemVer(a, loose).major
 module.exports = major
 
 
 /***/ }),
 
-/***/ 410:
+/***/ 2699:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 const minor = (a, loose) => new SemVer(a, loose).minor
 module.exports = minor
 
 
 /***/ }),
 
-/***/ 5715:
+/***/ 7534:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const neq = (a, b, loose) => compare(a, b, loose) !== 0
 module.exports = neq
 
 
 /***/ }),
 
-/***/ 9308:
+/***/ 6353:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 const parse = (version, options, throwErrors = false) => {
   if (version instanceof SemVer) {
     return version
@@ -4209,24 +4226,24 @@ module.exports = parse
 
 /***/ }),
 
-/***/ 5353:
+/***/ 6404:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
+const SemVer = __nccwpck_require__(8875)
 const patch = (a, loose) => new SemVer(a, loose).patch
 module.exports = patch
 
 
 /***/ }),
 
-/***/ 5253:
+/***/ 8114:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(9308)
+const parse = __nccwpck_require__(6353)
 const prerelease = (version, options) => {
   const parsed = parse(version, options)
   return (parsed && parsed.prerelease.length) ? parsed.prerelease : null
@@ -4236,36 +4253,36 @@ module.exports = prerelease
 
 /***/ }),
 
-/***/ 4054:
+/***/ 2509:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(2364)
+const compare = __nccwpck_require__(4885)
 const rcompare = (a, b, loose) => compare(b, a, loose)
 module.exports = rcompare
 
 
 /***/ }),
 
-/***/ 121:
+/***/ 5096:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compareBuild = __nccwpck_require__(3129)
+const compareBuild = __nccwpck_require__(7136)
 const rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose))
 module.exports = rsort
 
 
 /***/ }),
 
-/***/ 3746:
+/***/ 4459:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(6979)
+const Range = __nccwpck_require__(4894)
 const satisfies = (version, range, options) => {
   try {
     range = new Range(range, options)
@@ -4279,26 +4296,26 @@ module.exports = satisfies
 
 /***/ }),
 
-/***/ 163:
+/***/ 2352:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compareBuild = __nccwpck_require__(3129)
+const compareBuild = __nccwpck_require__(7136)
 const sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose))
 module.exports = sort
 
 
 /***/ }),
 
-/***/ 4613:
+/***/ 3186:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(9308)
-const constants = __nccwpck_require__(134)
-const SemVer = __nccwpck_require__(4384)
+const parse = __nccwpck_require__(6353)
+const constants = __nccwpck_require__(3693)
+const SemVer = __nccwpck_require__(8875)
 
 const truncate = (version, truncation, options) => {
   if (!constants.RELEASE_TYPES.includes(truncation)) {
@@ -4346,12 +4363,12 @@ module.exports = truncate
 
 /***/ }),
 
-/***/ 3493:
+/***/ 6108:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(9308)
+const parse = __nccwpck_require__(6353)
 const valid = (version, options) => {
   const v = parse(version, options)
   return v ? v.version : null
@@ -4361,54 +4378,54 @@ module.exports = valid
 
 /***/ }),
 
-/***/ 5177:
+/***/ 2376:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 // just pre-load all the stuff that index.js lazily exports
-const internalRe = __nccwpck_require__(9978)
-const constants = __nccwpck_require__(134)
-const SemVer = __nccwpck_require__(4384)
-const identifiers = __nccwpck_require__(1271)
-const parse = __nccwpck_require__(9308)
-const valid = __nccwpck_require__(3493)
-const clean = __nccwpck_require__(7426)
-const inc = __nccwpck_require__(4763)
-const diff = __nccwpck_require__(6396)
-const major = __nccwpck_require__(8782)
-const minor = __nccwpck_require__(410)
-const patch = __nccwpck_require__(5353)
-const prerelease = __nccwpck_require__(5253)
-const compare = __nccwpck_require__(2364)
-const rcompare = __nccwpck_require__(4054)
-const compareLoose = __nccwpck_require__(1319)
-const compareBuild = __nccwpck_require__(3129)
-const sort = __nccwpck_require__(163)
-const rsort = __nccwpck_require__(121)
-const gt = __nccwpck_require__(1640)
-const lt = __nccwpck_require__(2079)
-const eq = __nccwpck_require__(7973)
-const neq = __nccwpck_require__(5715)
-const gte = __nccwpck_require__(4597)
-const lte = __nccwpck_require__(5340)
-const cmp = __nccwpck_require__(8011)
-const coerce = __nccwpck_require__(6894)
-const truncate = __nccwpck_require__(4613)
-const Comparator = __nccwpck_require__(524)
-const Range = __nccwpck_require__(6979)
-const satisfies = __nccwpck_require__(3746)
-const toComparators = __nccwpck_require__(451)
-const maxSatisfying = __nccwpck_require__(120)
-const minSatisfying = __nccwpck_require__(3538)
-const minVersion = __nccwpck_require__(7222)
-const validRange = __nccwpck_require__(2446)
-const outside = __nccwpck_require__(1999)
-const gtr = __nccwpck_require__(8135)
-const ltr = __nccwpck_require__(1378)
-const intersects = __nccwpck_require__(912)
-const simplifyRange = __nccwpck_require__(961)
-const subset = __nccwpck_require__(252)
+const internalRe = __nccwpck_require__(2415)
+const constants = __nccwpck_require__(3693)
+const SemVer = __nccwpck_require__(8875)
+const identifiers = __nccwpck_require__(5060)
+const parse = __nccwpck_require__(6353)
+const valid = __nccwpck_require__(6108)
+const clean = __nccwpck_require__(7831)
+const inc = __nccwpck_require__(7378)
+const diff = __nccwpck_require__(6023)
+const major = __nccwpck_require__(8047)
+const minor = __nccwpck_require__(2699)
+const patch = __nccwpck_require__(6404)
+const prerelease = __nccwpck_require__(8114)
+const compare = __nccwpck_require__(4885)
+const rcompare = __nccwpck_require__(2509)
+const compareLoose = __nccwpck_require__(5706)
+const compareBuild = __nccwpck_require__(7136)
+const sort = __nccwpck_require__(2352)
+const rsort = __nccwpck_require__(5096)
+const gt = __nccwpck_require__(5367)
+const lt = __nccwpck_require__(4912)
+const eq = __nccwpck_require__(1930)
+const neq = __nccwpck_require__(7534)
+const gte = __nccwpck_require__(6308)
+const lte = __nccwpck_require__(4877)
+const cmp = __nccwpck_require__(9846)
+const coerce = __nccwpck_require__(409)
+const truncate = __nccwpck_require__(3186)
+const Comparator = __nccwpck_require__(9443)
+const Range = __nccwpck_require__(4894)
+const satisfies = __nccwpck_require__(4459)
+const toComparators = __nccwpck_require__(9966)
+const maxSatisfying = __nccwpck_require__(5689)
+const minSatisfying = __nccwpck_require__(3443)
+const minVersion = __nccwpck_require__(3578)
+const validRange = __nccwpck_require__(9777)
+const outside = __nccwpck_require__(7720)
+const gtr = __nccwpck_require__(6196)
+const ltr = __nccwpck_require__(2205)
+const intersects = __nccwpck_require__(1977)
+const simplifyRange = __nccwpck_require__(6543)
+const subset = __nccwpck_require__(7073)
 module.exports = {
   parse,
   valid,
@@ -4461,7 +4478,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 134:
+/***/ 3693:
 /***/ ((module) => {
 
 
@@ -4505,7 +4522,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 572:
+/***/ 6791:
 /***/ ((module) => {
 
 
@@ -4523,7 +4540,7 @@ module.exports = debug
 
 /***/ }),
 
-/***/ 1271:
+/***/ 5060:
 /***/ ((module) => {
 
 
@@ -4559,7 +4576,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 8734:
+/***/ 7111:
 /***/ ((module) => {
 
 
@@ -4608,7 +4625,7 @@ module.exports = LRUCache
 
 /***/ }),
 
-/***/ 3007:
+/***/ 8084:
 /***/ ((module) => {
 
 
@@ -4632,7 +4649,7 @@ module.exports = parseOptions
 
 /***/ }),
 
-/***/ 9978:
+/***/ 2415:
 /***/ ((module, exports, __nccwpck_require__) => {
 
 
@@ -4641,8 +4658,8 @@ const {
   MAX_SAFE_COMPONENT_LENGTH,
   MAX_SAFE_BUILD_LENGTH,
   MAX_LENGTH,
-} = __nccwpck_require__(134)
-const debug = __nccwpck_require__(572)
+} = __nccwpck_require__(3693)
+const debug = __nccwpck_require__(6791)
 exports = module.exports = {}
 
 // The actual regexps go on exports.re
@@ -4862,25 +4879,25 @@ createToken('GTE0PRE', '^\\s*>=\\s*0\\.0\\.0-0\\s*$')
 
 /***/ }),
 
-/***/ 8135:
+/***/ 6196:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 // Determine if version is greater than all the versions possible in the range.
-const outside = __nccwpck_require__(1999)
+const outside = __nccwpck_require__(7720)
 const gtr = (version, range, options) => outside(version, range, '>', options)
 module.exports = gtr
 
 
 /***/ }),
 
-/***/ 912:
+/***/ 1977:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(6979)
+const Range = __nccwpck_require__(4894)
 const intersects = (r1, r2, options) => {
   r1 = new Range(r1, options)
   r2 = new Range(r2, options)
@@ -4891,12 +4908,12 @@ module.exports = intersects
 
 /***/ }),
 
-/***/ 1378:
+/***/ 2205:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const outside = __nccwpck_require__(1999)
+const outside = __nccwpck_require__(7720)
 // Determine if version is less than all the versions possible in the range
 const ltr = (version, range, options) => outside(version, range, '<', options)
 module.exports = ltr
@@ -4904,13 +4921,13 @@ module.exports = ltr
 
 /***/ }),
 
-/***/ 120:
+/***/ 5689:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
-const Range = __nccwpck_require__(6979)
+const SemVer = __nccwpck_require__(8875)
+const Range = __nccwpck_require__(4894)
 
 const maxSatisfying = (versions, range, options) => {
   let max = null
@@ -4938,13 +4955,13 @@ module.exports = maxSatisfying
 
 /***/ }),
 
-/***/ 3538:
+/***/ 3443:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
-const Range = __nccwpck_require__(6979)
+const SemVer = __nccwpck_require__(8875)
+const Range = __nccwpck_require__(4894)
 const minSatisfying = (versions, range, options) => {
   let min = null
   let minSV = null
@@ -4971,14 +4988,14 @@ module.exports = minSatisfying
 
 /***/ }),
 
-/***/ 7222:
+/***/ 3578:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
-const Range = __nccwpck_require__(6979)
-const gt = __nccwpck_require__(1640)
+const SemVer = __nccwpck_require__(8875)
+const Range = __nccwpck_require__(4894)
+const gt = __nccwpck_require__(5367)
 
 const minVersion = (range, loose) => {
   range = new Range(range, loose)
@@ -5041,20 +5058,20 @@ module.exports = minVersion
 
 /***/ }),
 
-/***/ 1999:
+/***/ 7720:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(4384)
-const Comparator = __nccwpck_require__(524)
+const SemVer = __nccwpck_require__(8875)
+const Comparator = __nccwpck_require__(9443)
 const { ANY } = Comparator
-const Range = __nccwpck_require__(6979)
-const satisfies = __nccwpck_require__(3746)
-const gt = __nccwpck_require__(1640)
-const lt = __nccwpck_require__(2079)
-const lte = __nccwpck_require__(5340)
-const gte = __nccwpck_require__(4597)
+const Range = __nccwpck_require__(4894)
+const satisfies = __nccwpck_require__(4459)
+const gt = __nccwpck_require__(5367)
+const lt = __nccwpck_require__(4912)
+const lte = __nccwpck_require__(4877)
+const gte = __nccwpck_require__(6308)
 
 const outside = (version, range, hilo, options) => {
   version = new SemVer(version, options)
@@ -5130,7 +5147,7 @@ module.exports = outside
 
 /***/ }),
 
-/***/ 961:
+/***/ 6543:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -5138,8 +5155,8 @@ module.exports = outside
 // given a set of versions and a range, create a "simplified" range
 // that includes the same versions that the original range does
 // If the original range is shorter than the simplified one, return that.
-const satisfies = __nccwpck_require__(3746)
-const compare = __nccwpck_require__(2364)
+const satisfies = __nccwpck_require__(4459)
+const compare = __nccwpck_require__(4885)
 module.exports = (versions, range, options) => {
   const set = []
   let first = null
@@ -5186,16 +5203,16 @@ module.exports = (versions, range, options) => {
 
 /***/ }),
 
-/***/ 252:
+/***/ 7073:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(6979)
-const Comparator = __nccwpck_require__(524)
+const Range = __nccwpck_require__(4894)
+const Comparator = __nccwpck_require__(9443)
 const { ANY } = Comparator
-const satisfies = __nccwpck_require__(3746)
-const compare = __nccwpck_require__(2364)
+const satisfies = __nccwpck_require__(4459)
+const compare = __nccwpck_require__(4885)
 
 // Complex range `r1 || r2 || ...` is a subset of `R1 || R2 || ...` iff:
 // - Every simple range `r1, r2, ...` is a null set, OR
@@ -5442,12 +5459,12 @@ module.exports = subset
 
 /***/ }),
 
-/***/ 451:
+/***/ 9966:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(6979)
+const Range = __nccwpck_require__(4894)
 
 // Mostly just for testing and legacy API reasons
 const toComparators = (range, options) =>
@@ -5459,12 +5476,12 @@ module.exports = toComparators
 
 /***/ }),
 
-/***/ 2446:
+/***/ 9777:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(6979)
+const Range = __nccwpck_require__(4894)
 const validRange = (range, options) => {
   try {
     // Return '*' instead of '' so that truthiness works.
@@ -6092,7 +6109,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 2066:
+/***/ 4439:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6110,10 +6127,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.HttpClient = exports.HttpClientResponse = exports.HttpCodes = void 0;
 exports.isHttps = isHttps;
-const url = __nccwpck_require__(7016);
 const http = __nccwpck_require__(8611);
 const https = __nccwpck_require__(5692);
-const util = __nccwpck_require__(73);
+const util = __nccwpck_require__(1584);
 let fs;
 let tunnel;
 var HttpCodes;
@@ -6186,7 +6202,7 @@ class HttpClientResponse {
 }
 exports.HttpClientResponse = HttpClientResponse;
 function isHttps(requestUrl) {
-    let parsedUrl = url.parse(requestUrl);
+    const parsedUrl = new URL(requestUrl);
     return parsedUrl.protocol === 'https:';
 }
 var EnvironmentVariables;
@@ -6303,7 +6319,7 @@ class HttpClient {
             if (this._disposed) {
                 throw new Error("Client has already been disposed.");
             }
-            let parsedUrl = url.parse(requestUrl);
+            const parsedUrl = new URL(requestUrl);
             let info = this._prepareRequest(verb, parsedUrl, headers);
             // Only perform retries on reads since writes may not be idempotent.
             let maxTries = (this._allowRetries && RetryableHttpVerbs.indexOf(verb) != -1) ? this._maxRetries + 1 : 1;
@@ -6348,7 +6364,7 @@ class HttpClient {
                         // if there's no location to redirect to, we won't
                         break;
                     }
-                    let parsedRedirectUrl = url.parse(redirectUrl);
+                    const parsedRedirectUrl = new URL(redirectUrl, parsedUrl.href);
                     if (parsedUrl.protocol == 'https:' && parsedUrl.protocol != parsedRedirectUrl.protocol && !this._allowRedirectDowngrade) {
                         throw new Error("Redirect from HTTPS to HTTP protocol. This downgrade is not allowed for security reasons. If you want to allow this behavior, set the allowRedirectDowngrade option to true.");
                     }
@@ -6451,13 +6467,13 @@ class HttpClient {
     _prepareRequest(method, requestUrl, headers) {
         const info = {};
         info.parsedUrl = requestUrl;
-        const usingSsl = info.parsedUrl.protocol === 'https:';
+        const usingSsl = requestUrl.protocol === 'https:';
         info.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
         info.options = {};
-        info.options.host = info.parsedUrl.hostname;
-        info.options.port = info.parsedUrl.port ? parseInt(info.parsedUrl.port) : defaultPort;
-        info.options.path = (info.parsedUrl.pathname || '') + (info.parsedUrl.search || '');
+        info.options.host = requestUrl.hostname;
+        info.options.port = requestUrl.port ? parseInt(requestUrl.port) : defaultPort;
+        info.options.path = requestUrl.pathname + requestUrl.search;
         info.options.method = method;
         info.options.timeout = (this.requestOptions && this.requestOptions.socketTimeout) || this._socketTimeout;
         this._socketTimeout = info.options.timeout;
@@ -6465,9 +6481,9 @@ class HttpClient {
         if (this.userAgent != null) {
             info.options.headers["user-agent"] = this.userAgent;
         }
-        info.options.agent = this._getAgent(info.parsedUrl);
+        info.options.agent = this._getAgent(requestUrl);
         // gives handlers an opportunity to participate
-        if (this.handlers && !this._isPresigned(url.format(requestUrl))) {
+        if (this.handlers && !this._isPresigned(requestUrl.href)) {
             this.handlers.forEach((handler) => {
                 handler.prepareRequest(info.options);
             });
@@ -6522,7 +6538,7 @@ class HttpClient {
                 proxy: {
                     proxyAuth: proxy.proxyAuth,
                     host: proxy.proxyUrl.hostname,
-                    port: proxy.proxyUrl.port
+                    port: Number(proxy.proxyUrl.port) || (proxy.proxyUrl.protocol === 'https:' ? 443 : 80)
                 },
             };
             let tunnelAgent;
@@ -6583,7 +6599,7 @@ class HttpClient {
         let proxyAuth;
         if (proxyConfig) {
             if (proxyConfig.proxyUrl.length > 0) {
-                proxyUrl = url.parse(proxyConfig.proxyUrl);
+                proxyUrl = new URL(proxyConfig.proxyUrl);
             }
             if (proxyConfig.proxyUsername || proxyConfig.proxyPassword) {
                 proxyAuth = proxyConfig.proxyUsername + ":" + proxyConfig.proxyPassword;
@@ -6614,7 +6630,7 @@ exports.HttpClient = HttpClient;
 
 /***/ }),
 
-/***/ 73:
+/***/ 1584:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6635,8 +6651,6 @@ exports.decompressGzippedContent = decompressGzippedContent;
 exports.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
 exports.obtainContentCharset = obtainContentCharset;
 const qs = __nccwpck_require__(7547);
-const url = __nccwpck_require__(7016);
-const path = __nccwpck_require__(6928);
 const zlib = __nccwpck_require__(3106);
 /**
  * creates an url from a request url and optional base url (http://server:8080)
@@ -6646,7 +6660,6 @@ const zlib = __nccwpck_require__(3106);
  * @return {string} - resultant url
  */
 function getUrl(resource, baseUrl, queryParams) {
-    const pathApi = path.posix || path;
     let requestUrl = '';
     if (!baseUrl) {
         requestUrl = resource;
@@ -6655,17 +6668,17 @@ function getUrl(resource, baseUrl, queryParams) {
         requestUrl = baseUrl;
     }
     else {
-        const base = url.parse(baseUrl);
-        const resultantUrl = url.parse(resource);
-        // resource (specific per request) elements take priority
-        resultantUrl.protocol = resultantUrl.protocol || base.protocol;
-        resultantUrl.auth = resultantUrl.auth || base.auth;
-        resultantUrl.host = resultantUrl.host || base.host;
-        resultantUrl.pathname = pathApi.resolve(base.pathname, resultantUrl.pathname);
+        const effectiveBase = new URL(baseUrl);
+        // Ensure the base path is treated as a directory so relative resource paths
+        // append to it without corrupting any existing query string or fragment.
+        if (!effectiveBase.pathname.endsWith('/')) {
+            effectiveBase.pathname += '/';
+        }
+        const resultantUrl = new URL(resource, effectiveBase.href);
         if (!resultantUrl.pathname.endsWith('/') && resource.endsWith('/')) {
             resultantUrl.pathname += '/';
         }
-        requestUrl = url.format(resultantUrl);
+        requestUrl = resultantUrl.href;
     }
     return queryParams ?
         getUrlWithParsedQueryParams(requestUrl, queryParams) :
@@ -34454,13 +34467,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("node:zlib");
 
 /***/ }),
 
-/***/ 6928:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
-
-/***/ }),
-
 /***/ 3193:
 /***/ ((module) => {
 
@@ -34472,13 +34478,6 @@ module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("string_decod
 /***/ ((module) => {
 
 module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("tls");
-
-/***/ }),
-
-/***/ 7016:
-/***/ ((module) => {
-
-module.exports = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("url");
 
 /***/ }),
 
@@ -34763,8 +34762,8 @@ function file_command_prepareKeyValueMessage(key, value) {
     return `${key}<<${delimiter}${os.EOL}${convertedValue}${os.EOL}${delimiter}`;
 }
 //# sourceMappingURL=file-command.js.map
-// EXTERNAL MODULE: external "path"
-var external_path_ = __nccwpck_require__(6928);
+;// CONCATENATED MODULE: external "path"
+const external_path_namespaceObject = __WEBPACK_EXTERNAL_createRequire(import.meta.url)("path");
 // EXTERNAL MODULE: external "http"
 var external_http_ = __nccwpck_require__(8611);
 var external_http_namespaceObject = /*#__PURE__*/__nccwpck_require__.t(external_http_, 2);
@@ -36133,7 +36132,7 @@ function tryGetExecutablePath(filePath, extensions) {
         if (stats && stats.isFile()) {
             if (IS_WINDOWS) {
                 // on Windows, test for valid extension
-                const upperExt = external_path_.extname(filePath).toUpperCase();
+                const upperExt = external_path_namespaceObject.extname(filePath).toUpperCase();
                 if (extensions.some(validExt => validExt.toUpperCase() === upperExt)) {
                     return filePath;
                 }
@@ -36162,11 +36161,11 @@ function tryGetExecutablePath(filePath, extensions) {
                 if (IS_WINDOWS) {
                     // preserve the case of the actual file (since an extension was appended)
                     try {
-                        const directory = external_path_.dirname(filePath);
-                        const upperName = external_path_.basename(filePath).toUpperCase();
+                        const directory = external_path_namespaceObject.dirname(filePath);
+                        const upperName = external_path_namespaceObject.basename(filePath).toUpperCase();
                         for (const actualName of yield readdir(directory)) {
                             if (upperName === actualName.toUpperCase()) {
-                                filePath = external_path_.join(directory, actualName);
+                                filePath = external_path_namespaceObject.join(directory, actualName);
                                 break;
                             }
                         }
@@ -36247,7 +36246,7 @@ function io_cp(source_1, dest_1) {
         }
         // If dest is an existing directory, should copy inside.
         const newDest = destStat && destStat.isDirectory() && copySourceDirectory
-            ? external_path_.join(dest, external_path_.basename(source))
+            ? external_path_namespaceObject.join(dest, external_path_namespaceObject.basename(source))
             : dest;
         if (!(yield exists(source))) {
             throw new Error(`no such file or directory: ${source}`);
@@ -36262,7 +36261,7 @@ function io_cp(source_1, dest_1) {
             }
         }
         else {
-            if (external_path_.relative(source, newDest) === '') {
+            if (external_path_namespaceObject.relative(source, newDest) === '') {
                 // a file cannot be copied to itself
                 throw new Error(`'${newDest}' and '${source}' are the same file`);
             }
@@ -36386,7 +36385,7 @@ function findInPath(tool) {
         // build the list of extensions to try
         const extensions = [];
         if (IS_WINDOWS && process.env['PATHEXT']) {
-            for (const extension of process.env['PATHEXT'].split(external_path_.delimiter)) {
+            for (const extension of process.env['PATHEXT'].split(external_path_namespaceObject.delimiter)) {
                 if (extension) {
                     extensions.push(extension);
                 }
@@ -36401,7 +36400,7 @@ function findInPath(tool) {
             return [];
         }
         // if any path separators, return empty
-        if (tool.includes(external_path_.sep)) {
+        if (tool.includes(external_path_namespaceObject.sep)) {
             return [];
         }
         // build the list of directories
@@ -36412,7 +36411,7 @@ function findInPath(tool) {
         // across platforms.
         const directories = [];
         if (process.env.PATH) {
-            for (const p of process.env.PATH.split(external_path_.delimiter)) {
+            for (const p of process.env.PATH.split(external_path_namespaceObject.delimiter)) {
                 if (p) {
                     directories.push(p);
                 }
@@ -36421,7 +36420,7 @@ function findInPath(tool) {
         // find all matches
         const matches = [];
         for (const directory of directories) {
-            const filePath = yield tryGetExecutablePath(external_path_.join(directory, tool), extensions);
+            const filePath = yield tryGetExecutablePath(external_path_namespaceObject.join(directory, tool), extensions);
             if (filePath) {
                 matches.push(filePath);
             }
@@ -36852,7 +36851,7 @@ class ToolRunner extends external_events_.EventEmitter {
                 (this.toolPath.includes('/') ||
                     (toolrunner_IS_WINDOWS && this.toolPath.includes('\\')))) {
                 // prefer options.cwd if it is specified, however options.cwd may also need to be rooted
-                this.toolPath = external_path_.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
+                this.toolPath = external_path_namespaceObject.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
             }
             // if the tool is only a file name, then resolve it from the PATH
             // otherwise verify it exists (add extension on Windows if necessary)
@@ -37653,8 +37652,8 @@ function getInstallPath(platform) {
     }
 }
 
-// EXTERNAL MODULE: ./node_modules/.pnpm/semver@7.8.1/node_modules/semver/index.js
-var node_modules_semver = __nccwpck_require__(5177);
+// EXTERNAL MODULE: ./node_modules/.pnpm/semver@7.8.2/node_modules/semver/index.js
+var node_modules_semver = __nccwpck_require__(2376);
 ;// CONCATENATED MODULE: ./node_modules/.pnpm/@actions+tool-cache@4.0.0/node_modules/@actions/tool-cache/lib/manifest.js
 var manifest_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -37871,8 +37870,8 @@ const userAgent = 'actions/tool-cache';
  */
 function downloadTool(url, dest, auth, headers) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
-        dest = dest || external_path_.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
-        yield mkdirP(external_path_.dirname(dest));
+        dest = dest || external_path_namespaceObject.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
+        yield mkdirP(external_path_namespaceObject.dirname(dest));
         core_debug(`Downloading ${url}`);
         core_debug(`Destination ${dest}`);
         const maxAttempts = 3;
@@ -38354,7 +38353,7 @@ function _createExtractFolder(dest) {
     return tool_cache_awaiter(this, void 0, void 0, function* () {
         if (!dest) {
             // create a temp dir
-            dest = external_path_.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
+            dest = external_path_namespaceObject.join(_getTempDirectory(), external_crypto_namespaceObject.randomUUID());
         }
         yield mkdirP(dest);
         return dest;
@@ -38500,8 +38499,8 @@ async function downloadAndExtractZip(url) {
     throw new Error(`Failed to download and extract ChromeDriver from ${url} after ${maxRetries} attempts: ${message}`);
 }
 
-// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@2.3.1/node_modules/typed-rest-client/HttpClient.js
-var typed_rest_client_HttpClient = __nccwpck_require__(2066);
+// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@3.0.0/node_modules/typed-rest-client/HttpClient.js
+var typed_rest_client_HttpClient = __nccwpck_require__(4439);
 ;// CONCATENATED MODULE: ./lib/installer/http.js
 /**
  * HTTP helpers used by the TypeScript rewrite of setup-chromedriver.
@@ -38714,10 +38713,14 @@ async function resolveLegacyVersion(majorVersion) {
  * Linux / macOS installer for setup-chromedriver.
  *
  * This module implements the install flow originally provided by the
- * (now-removed) setup-chromedriver.sh reference script:
+ * (now-removed) setup-chromedriver.sh reference script, with a few deliberate
+ * modernizations in the linux64 apt path (see `installLinuxDependencies`):
  *
- *   - apt dependency installation on linux64 (apt-key / google.list / apt-get)
- *     via `@actions/exec`.
+ *   - apt dependency installation on linux64 (signing key / google.list /
+ *     apt-get) via `@actions/exec`. `curl` and `jq` are no longer installed
+ *     (the native code uses Node HTTP + `JSON.parse`), and the broken
+ *     `apt-key adv` step is replaced by a native key download + a `signed-by`
+ *     keyring (no `gnupg` needed).
  *   - Chrome major-version detection and the legacy (<115) vs modern (>=115)
  *     download / install split.
  *   - Installation to `/usr/local/bin/chromedriver` via `mv` (with `sudo` when
@@ -38735,6 +38738,15 @@ async function resolveLegacyVersion(majorVersion) {
 
 
 
+
+// Google's Linux package signing key, and the `signed-by` keyring path it is
+// installed to. This replaces the original `apt-key adv ... --recv-keys` step,
+// which is broken on Debian 12+ / recent apt where `apt-key` has been removed
+// (the root cause of container failures such as #243). apt reads ASCII-armored
+// keyrings directly, so the downloaded `.pub` is written verbatim — no
+// `gpg --dearmor`, and therefore no `gnupg` dependency.
+const GOOGLE_SIGNING_KEY_URL = "https://dl.google.com/linux/linux_signing_key.pub";
+const GOOGLE_KEYRING_PATH = "/usr/share/keyrings/google-chrome.asc";
 /**
  * Resolve the `sudo` executable path, mirroring `sudo=$(command -v sudo)`.
  *
@@ -38792,46 +38804,55 @@ async function installLinuxDependencies(sudo, chromeapp) {
         silent: true,
     });
     if (dpkgStatus !== 0) {
-        // `${sudo} apt-key adv --keyserver keyserver.ubuntu.com --recv-keys 4EB27DB2A3B88B8B`
-        await runWithSudo(sudo, "apt-key", [
-            "adv",
-            "--keyserver",
-            "keyserver.ubuntu.com",
-            "--recv-keys",
-            "4EB27DB2A3B88B8B",
-        ]);
-        // `echo "deb [arch=amd64] ..." | ${sudo} tee /etc/apt/sources.list.d/google.list >/dev/null`
-        // Reproduce the piped `tee` without invoking a shell: feed the repo line to
-        // tee's stdin via @actions/exec's `input` option, and run tee under sudo
-        // when available. Avoiding `sh -c` removes any shell string interpolation.
-        const teeArgs = ["/etc/apt/sources.list.d/google.list"];
-        await runWithSudo(sudo, "tee", teeArgs, {
-            input: Buffer.from("deb [arch=amd64] https://dl.google.com/linux/chrome/deb/ stable main\n"),
+        // Set up the Google Chrome apt repository using the modern `signed-by`
+        // keyring scheme. The shell script used `apt-key adv --recv-keys`, which no
+        // longer works on Debian 12+ / recent apt (apt-key was removed) — see
+        // GOOGLE_SIGNING_KEY_URL above. Download the signing key natively over HTTP
+        // and install it as an ASCII-armored keyring.
+        const signingKey = await fetchText(GOOGLE_SIGNING_KEY_URL);
+        // `fetchText` already throws on non-2xx / network errors, but a 200 response
+        // with unexpected content (e.g. a redirect or error page) would otherwise be
+        // written as-is and surface only later as a cryptic `apt-get update` failure.
+        // Validate the armored key up front so the error points at the real cause.
+        if (!signingKey || !signingKey.includes("BEGIN PGP PUBLIC KEY BLOCK")) {
+            throw new Error(`Downloaded Google signing key from ${GOOGLE_SIGNING_KEY_URL} is not a valid PGP public key block.`);
+        }
+        // Write the keyring with `tee` (under sudo when available), feeding the key
+        // to stdin via @actions/exec's `input` option. Using stdin avoids `sh -c`
+        // and keeps the key material out of the process arguments.
+        await runWithSudo(sudo, "tee", [GOOGLE_KEYRING_PATH], {
+            input: Buffer.from(signingKey),
+            // Suppress tee echoing stdin back to stdout (the key is not secret, but
+            // there is no value in logging it).
+            silent: true,
+        });
+        // `echo "deb [arch=amd64 signed-by=...] ..." | ${sudo} tee google.list >/dev/null`
+        // Same piped-tee-via-stdin pattern; the repo line now pins the keyring.
+        await runWithSudo(sudo, "tee", ["/etc/apt/sources.list.d/google.list"], {
+            input: Buffer.from(`deb [arch=amd64 signed-by=${GOOGLE_KEYRING_PATH}] https://dl.google.com/linux/chrome/deb/ stable main\n`),
             // Mirror the original `>/dev/null` (suppress tee echoing stdin to stdout).
             silent: true,
         });
         // `APP=google-chrome-stable`
         app = "google-chrome-stable";
     }
-    // Build the list of apt packages to install when missing.
-    //
-    // The original shell script also installed `curl` and `jq` for its
-    // `curl | jq` Chrome-for-Testing JSON pipeline. The TypeScript runtime
-    // fetches and parses that JSON natively (typed-rest-client in http.ts), so
-    // neither binary is needed and we no longer install them. `unzip` is still
-    // required because @actions/tool-cache shells out to it when extracting the
-    // downloaded archive.
+    // Build the `apps[]` array of packages to apt-install. This diverges
+    // intentionally from setup-chromedriver.sh, which also added `curl` and `jq`.
+    // The native implementation performs HTTP via Node (@actions/tool-cache /
+    // typed-rest-client) and parses JSON with `JSON.parse`, so neither binary is
+    // used anymore — installing them would be dead weight and adds friction to
+    // minimal `container:` images. `unzip` is still required because
+    // `@actions/tool-cache.extractZip` shells out to it on Unix.
     const apps = [];
-    // Install sudo when it is not already present (needed by the runWithSudo
-    // calls above, which fall back to running unprivileged when sudo is absent).
+    // `test -z "${sudo}" && apps+=(sudo)`
     if (!sudo) {
         apps.push("sudo");
     }
-    // Install the Chrome package when the browser binary is not on PATH.
+    // `type -a "${CHROMEAPP}" > /dev/null 2>&1 || apps+=("${APP}")`
     if (!(await commandExists(chromeApp))) {
         apps.push(app);
     }
-    // Install unzip when missing (used by tool-cache's archive extraction).
+    // `type -a unzip > /dev/null 2>&1 || apps+=(unzip)`
     if (!(await commandExists("unzip"))) {
         apps.push("unzip");
     }
@@ -38911,7 +38932,7 @@ async function installOnUnix(opts) {
         info(`Downloading ${url}...`);
         // Download + unzip. Legacy zip has the `chromedriver` binary at the root.
         const extractedDir = await downloadAndExtractZip(url);
-        const source = external_path_.join(extractedDir, "chromedriver");
+        const source = external_path_namespaceObject.join(extractedDir, "chromedriver");
         // `${sudo} mv chromedriver /usr/local/bin/chromedriver`
         await sudoMove(sudo, source, installPath);
         // `exit` -- legacy path terminates without printing versions.
@@ -38920,12 +38941,11 @@ async function installOnUnix(opts) {
     // -------------------------------------------------------------------------
     // Modern (>=115)
     // -------------------------------------------------------------------------
-    // When no version was requested, reuse the full version detected above for
-    // the major-version check rather than probing `<chromeapp> --version` again.
+    // Reuse the full version detected above rather than probing
+    // `<chromeapp> --version` again. Reaching this branch with an empty `version`
+    // means the detection branch ran earlier, so `detectedFullVersion` is set.
     if (!version) {
-        version =
-            detectedFullVersion ??
-                (await detectFullChromeVersion(platform, chromeapp));
+        version = detectedFullVersion;
         info(`VERSION=${version}`);
     }
     // `if [[ "${ARCH}" == "mac64" ]]; then ARCH="mac-x64"; fi`
@@ -38940,7 +38960,7 @@ async function installOnUnix(opts) {
     // `chromedriver-${arch}/chromedriver`.
     const extractedDir = await downloadAndExtractZip(url);
     info("Installing chromedriver to /usr/local/bin");
-    const source = external_path_.join(extractedDir, `chromedriver-${modernArch}`, "chromedriver");
+    const source = external_path_namespaceObject.join(extractedDir, `chromedriver-${modernArch}`, "chromedriver");
     // `${sudo} mv "chromedriver-${ARCH}/chromedriver" /usr/local/bin/chromedriver`
     await sudoMove(sudo, source, installPath);
     // `if command -v "${CHROMEAPP}" >/dev/null; then echo Chrome version:; "${CHROMEAPP}" --version; fi`
@@ -39005,12 +39025,12 @@ async function installOnWindows(opts) {
         info(`Downloading ${url}...`);
         const extractedDir = await downloadAndExtractZip(url);
         // Legacy zip: chromedriver.exe is at the root of the archive.
-        const binary = external_path_.join(extractedDir, "chromedriver.exe");
+        const binary = external_path_namespaceObject.join(extractedDir, "chromedriver.exe");
         // Use cp, not mv: tool-cache extracts to the temp drive (D:) while the
         // install path is on C:, and io.mv uses fs.rename which fails with EXDEV
         // across drives. The original ps1 used Move-Item, which copies across
         // volumes. A copy achieves the same install (the temp source is ephemeral).
-        await io_cp(binary, external_path_.join(installPath, "chromedriver.exe"), {
+        await io_cp(binary, external_path_namespaceObject.join(installPath, "chromedriver.exe"), {
             force: true,
         });
         return;
@@ -39029,10 +39049,10 @@ async function installOnWindows(opts) {
     const extractedDir = await downloadAndExtractZip(url);
     // Modern Windows zip: single-nested chromedriver-win64/chromedriver.exe.
     // tool-cache.extractZip honors the real zip structure.
-    const binary = external_path_.join(extractedDir, "chromedriver-win64", "chromedriver.exe");
+    const binary = external_path_namespaceObject.join(extractedDir, "chromedriver-win64", "chromedriver.exe");
     // Use cp, not mv: see the legacy branch above — io.mv (fs.rename) fails with
     // EXDEV when the temp drive (D:) and the install path (C:) differ.
-    await io_cp(binary, external_path_.join(installPath, "chromedriver.exe"), {
+    await io_cp(binary, external_path_namespaceObject.join(installPath, "chromedriver.exe"), {
         force: true,
     });
 }

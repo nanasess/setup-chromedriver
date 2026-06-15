@@ -14,3 +14,10 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Dependabot は pnpm の minimumReleaseAge を認識しないため、ここで
+    # cooldown を設定し、まだインストールできない (= --frozen-lockfile が
+    # ERR_PNPM_NO_MATCHING_VERSION で失敗する) 新版で PR を作らせない。
+    # 不変条件: cooldown >= pnpm-workspace.yaml の minimumReleaseAge (1 日)。
+    # 余裕を持たせ、自動更新経路の供給網保護も厚くするため 3 日にする。
+    cooldown:
+      default-days: 3

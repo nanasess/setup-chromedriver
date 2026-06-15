@@ -20,24 +20,18 @@ name: "Test ChromeDriver version resolution"
 # assert that `chromedriver --version` reports the expected version.
 #
 # `uses: ./` exercises the action code of the current commit (the native
-# TypeScript implementation on this branch / on master after #446 merges).
+# TypeScript implementation).
+#
+# Reusable workflow: orchestrated by main.yml. workflow_dispatch is kept so this
+# suite can still be run on its own from the Actions UI.
 
 on:
-  push:
-    branches:
-      - "*"
-    tags:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
-  pull_request:
-    branches:
-      - "*"
-    paths:
-      - "**"
-      - "!*.md"
+  workflow_call:
   workflow_dispatch:
+
+# 最小権限: checkout / アクション実行のみで書き込み不要。
+permissions:
+  contents: read
 
 jobs:
   resolve:
@@ -70,7 +64,9 @@ jobs:
       VERSION: ${{ matrix.case.version }}
       EXPECT: ${{ matrix.case.expect }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
 
       # Windows: the action reads the installed Chrome's FileVersion up front,
       # so chromeapp must point at the pre-installed Chrome. (Left empty on

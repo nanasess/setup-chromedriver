@@ -49,6 +49,13 @@ That's it! ChromeDriver will be installed and added to your PATH.
 > replacement. `@v2` remains available as the previous, shell-based
 > implementation for existing workflows that prefer to stay pinned.
 
+> [!WARNING]
+> **`@master` is deprecated** — the default branch is now `main`. If your
+> workflow references the action by the `master` branch
+> (`uses: nanasess/setup-chromedriver@master`), please migrate to `@v3` (or pin
+> a full commit SHA). The `master` branch is frozen, emits a deprecation
+> warning at runtime, and will not receive future updates.
+
 > [!TIP]
 > **Supply-chain hardening** — mutable tags like v3 can be repointed at any
 > time, so for security-sensitive workflows pin the action to a full-length
@@ -101,25 +108,26 @@ steps:
 ### Usage in a Container
 
 When a job runs inside a `container:` image (e.g. `ruby`, `elixir`, `node:slim`,
-`debian:slim`), the action **cannot install Google Chrome or the system
-prerequisites for you** — minimal images ship without `sudo`, `git`, `gnupg`,
-`unzip`, etc., and recent Debian releases (12 "bookworm" and later) no longer
-provide `apt-key`. You must prepare the container yourself before calling the
-action (see issues [#32](https://github.com/nanasess/setup-chromedriver/issues/32)
-and [#243](https://github.com/nanasess/setup-chromedriver/issues/243)).
+`debian:slim`), the action sets up the Google Chrome apt repository and installs
+Chrome for you. It downloads Google's signing key over HTTPS and registers it as
+a `signed-by` keyring — the modern scheme that works on recent Debian releases
+(12 "bookworm" and later), which removed the `apt-key` the action previously
+relied on (see issues
+[#32](https://github.com/nanasess/setup-chromedriver/issues/32) and
+[#243](https://github.com/nanasess/setup-chromedriver/issues/243)).
 
-Three things are required:
+You only need to install a few base packages that minimal images do not ship:
 
 1. **Install the prerequisites _before_ `actions/checkout`** (checkout itself
    needs `git`, which slim images do not ship):
-   `git sudo gnupg ca-certificates curl unzip jq wget`
-2. **Install Google Chrome yourself** using the modern `signed-by` keyring
-   scheme (the action's built-in Chrome install relies on the removed
-   `apt-key`).
-3. **Pass `chromeapp: google-chrome-stable`** — the action checks
-   `dpkg -s <chromeapp>`, so it must match the installed _package_ name
-   (`google-chrome-stable`), not the `google-chrome` binary alias. Otherwise the
-   check fails and the action falls back to the broken `apt-key` install path.
+   `git sudo ca-certificates unzip`
+   - `git` for `actions/checkout`, `unzip` to extract ChromeDriver,
+     `ca-certificates` for the HTTPS Chrome apt repository, and `sudo` only when
+     the container does not run as root.
+2. **Pass `chromeapp: google-chrome-stable`** (the default on Linux) so the
+   action's `dpkg -s <chromeapp>` check and version detection use the package
+   name, not the `google-chrome` binary alias. The action installs
+   `google-chrome-stable` itself when it is not already present.
 
 ```yaml
 jobs:
@@ -128,26 +136,17 @@ jobs:
     container:
       image: ruby:3.2.2
     steps:
-      # 1. Prerequisites (must run before checkout, since checkout needs git)
+      # Prerequisites (must run before checkout, since checkout needs git)
       - name: Install container prerequisites
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            git sudo gnupg ca-certificates curl unzip jq wget
-
-      # 2. Install Google Chrome via the signed-by keyring scheme
-      - name: Install Google Chrome
-        run: |
-          wget -q -O- https://dl.google.com/linux/linux_signing_key.pub \
-            | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg
-          echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" \
-            > /etc/apt/sources.list.d/google-chrome.list
-          apt-get update
-          apt-get install -y google-chrome-stable
+            git sudo ca-certificates unzip
 
       - uses: actions/checkout@v4
 
-      # 3. Pass the installed package name as chromeapp
+      # The action registers the signed-by Chrome repo and installs Chrome and
+      # ChromeDriver. No manual Google Chrome setup is required.
       - uses: nanasess/setup-chromedriver@v3
         with:
           chromeapp: google-chrome-stable
