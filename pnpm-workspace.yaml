@@ -39,3 +39,11 @@ allowBuilds:
 # を塞ぐため override で 6.15.2 以上へ引き上げる。patch 上げで API 互換。
 overrides:
   qs: '>=6.15.2'
+  # js-yaml: jest のカバレッジ機構 (@jest/transform → babel-plugin-istanbul →
+  # @istanbuljs/load-nyc-config) が js-yaml@^3.13.1 をピン留めしており、修正版
+  # 4.2.0 を使う上流が存在しない。GHSA (js-yaml <=4.1.1 / 修正 >=4.2.0) を塞ぐ
+  # ため override で 4 系へ引き上げる。当プロジェクトは jest のカバレッジを
+  # 一切使わない (jest.config.mjs に collectCoverage なし / transform は ts-jest
+  # のみ) ため load-nyc-config は実行されず、js-yaml 3→4 の API 差異 (safeLoad
+  # 削除等) の影響を受けない。3 系のみを対象にするためセレクタを付ける。
+  js-yaml@^3: '^4.2.0'
