@@ -27,7 +27,7 @@
     "@actions/exec": "^3.0.0",
     "@actions/io": "^3.0.0",
     "@actions/tool-cache": "4.0.0",
-    "semver": "^7.8.2",
+    "semver": "^7.8.4",
     "typed-rest-client": "^3.0.0"
   },
   "devDependencies": {
