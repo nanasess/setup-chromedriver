@@ -19,7 +19,7 @@
 import * as exec from "@actions/exec";
 
 import {
-  ChromeKnownGoodVersions,
+  type ChromeKnownGoodVersions,
   buildLegacyLatestReleaseUrl,
   extractDriverUrlFromJson,
   findFallbackVersion,
