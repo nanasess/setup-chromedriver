@@ -1,6 +1,8 @@
 import { Builder, until } from "selenium-webdriver";
 // ESM (the project is "type":"module") requires an explicit extension for this
-// CJS subpath; without it Node throws ERR_MODULE_NOT_FOUND under ts-node.
+// CJS subpath; without it Node throws ERR_MODULE_NOT_FOUND. This file is run
+// directly via `node __tests__/chromedriver.ts` (Node 24 native type-stripping),
+// so it must stay strip-safe: value imports only, no `import type` needed here.
 import * as chrome from "selenium-webdriver/chrome.js";
 
 (async () => {
