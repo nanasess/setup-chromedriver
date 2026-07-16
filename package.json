@@ -27,12 +27,12 @@
     "@actions/exec": "^3.0.0",
     "@actions/io": "^3.0.0",
     "@actions/tool-cache": "4.0.0",
-    "semver": "^7.8.4",
+    "semver": "^7.8.5",
     "typed-rest-client": "^3.0.0"
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^26.1.0",
+    "@types/node": "^26.1.1",
     "@types/selenium-webdriver": "^4.35.4",
     "@types/semver": "^7.7.1",
     "@types/yauzl": "^3.4.0",
@@ -40,7 +40,7 @@
     "@jest/globals": "^30.3.0",
     "jest": "^30.3.0",
     "prettier": "^3.9.5",
-    "selenium-webdriver": "^4.45.0",
+    "selenium-webdriver": "^4.46.0",
     "typescript": "^7.0.2"
   },
   "packageManager": "pnpm@11.5.0+sha512.dbfcc4f81cf48597afd4bc391ffdf12c11f1a9fb83a395bfa6b0a2d9cc2fd8ffebafdb1ccbd529632153f793904c2615b7f09fe1a345473fd1c35845172a8eb1"
