@@ -9,8 +9,8 @@ import { jest } from "@jest/globals";
 import {
   buildLegacyLatestReleaseUrl,
   extractDriverUrlFromJson,
-  ChromeKnownGoodVersions,
-  ChromeVersion,
+  type ChromeKnownGoodVersions,
+  type ChromeVersion,
 } from "../src/chromedriver-helper.js";
 
 const JSON_URL =

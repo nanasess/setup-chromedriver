@@ -9,7 +9,7 @@
     "package": "ncc build lib/setup-chromedriver.js --source-map --license licenses.txt",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+    "test": "node --experimental-vm-modules --disable-warning=ExperimentalWarning node_modules/jest/bin/jest.js"
   },
   "repository": {
     "type": "git",
@@ -32,18 +32,16 @@
   },
   "devDependencies": {
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.9.3",
+    "@types/node": "^26.1.0",
     "@types/selenium-webdriver": "^4.35.4",
     "@types/semver": "^7.7.1",
     "@types/yauzl": "^3.4.0",
-    "@vercel/ncc": "^0.44.0",
+    "@vercel/ncc": "^0.44.1",
     "@jest/globals": "^30.3.0",
     "jest": "^30.3.0",
-    "prettier": "^3.8.4",
-    "selenium-webdriver": "^4.39.0",
-    "ts-jest": "^29.2.5",
-    "ts-node": "^10.9.2",
-    "typescript": "^6.0.3"
+    "prettier": "^3.9.4",
+    "selenium-webdriver": "^4.45.0",
+    "typescript": "^7.0.2"
   },
   "packageManager": "pnpm@11.5.0+sha512.dbfcc4f81cf48597afd4bc391ffdf12c11f1a9fb83a395bfa6b0a2d9cc2fd8ffebafdb1ccbd529632153f793904c2615b7f09fe1a345473fd1c35845172a8eb1"
 }

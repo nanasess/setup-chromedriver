@@ -60,7 +60,7 @@ jobs:
         chromeapp: ${{ env.CHROMEAPP }}
     - name: setup
       run: |
-        node_modules\.bin\ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
+        node --disable-warning=ExperimentalWarning "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
 
   test_default_version:
     runs-on: ${{ matrix.os }}
@@ -95,4 +95,4 @@ jobs:
     - uses: ./
     - name: setup
       run: |
-        node_modules\.bin\ts-node "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
+        node --disable-warning=ExperimentalWarning "$Env:GITHUB_WORKSPACE\__tests__\chromedriver.ts"
