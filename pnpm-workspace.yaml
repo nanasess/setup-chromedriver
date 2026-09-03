@@ -31,6 +31,11 @@ minimumReleaseAgeExclude:
 # ビルドは不要 → false。
 allowBuilds:
   unrs-resolver: false
+  # @parcel/watcher は jest のファイル監視器。jest-haste-map@30.5.0 が
+  # 30.4.1 までの walker + optional fsevents を置き換えて直接依存に加えた。
+  # プリビルドバイナリ (@parcel/watcher-<os>-<cpu>) が optional dependency
+  # で入るためネイティブビルドは不要 → false。
+  '@parcel/watcher': false
 
 # 推移的依存のバージョン強制 (セキュリティ修正)。
 # qs: typed-rest-client が qs@6.15.1 をピン留めしており、修正版 6.15.2 を
