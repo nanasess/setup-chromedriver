@@ -9,6 +9,24 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      # workflow で使う action (checkout / setup-node / pnpm-action-setup) は
+      # SHA ピン + バージョンコメントで運用しており、更新は機械的で
+      # 個別レビューの価値が薄い。1 PR にまとめて CI 1 回で済ませる。
+      github-actions:
+        patterns:
+          - "*"
+        exclude-patterns:
+          # claude-code-action の更新 PR は workflow ファイルを変更するため
+          # OIDC 検証で CI が必ず失敗する (無視して良い既知の挙動)。他の
+          # action 更新を巻き込むと「赤いがマージして良い PR」に紛れるので、
+          # グループから外して単独 PR のままにする。
+          - "anthropics/claude-code-action"
+        # major は破壊的変更 (入力の削除, Node ランタイム更新等) を伴うため
+        # グループに混ぜず単独 PR でレビューする。
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: "npm"
     directory: "/"
@@ -21,3 +39,41 @@ updates:
     # 余裕を持たせ、自動更新経路の供給網保護も厚くするため 3 日にする。
     cooldown:
       default-days: 3
+    # グループは上から順に評価され、依存は最初に一致したグループへ入る。
+    # dist/index.js に影響する更新 (runtime / build-toolchain) と、影響しない
+    # 開発専用の更新を分けることで、dependabot-dist.yml が追記する
+    # `build: regenerate dist/lib` コミットのレビュー範囲を絞る。
+    # major はいずれも単独 PR に落とす (例: ESM 移行を伴った tool-cache 4,
+    # TypeScript 7 のように、単体で作業が必要になるため)。
+    groups:
+      # 本番依存 (@actions/*, semver, typed-rest-client) は ncc で
+      # dist/index.js にバンドルされ、本番タグ (@v3 等) の挙動を直接変える。
+      # まとめて 1 PR にし、dist の再生成も 1 回で済ませる。
+      runtime-dependencies:
+        dependency-type: "production"
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+      # dev 依存だが出力物 (lib/, dist/index.js) を作る側なので、生成差分の
+      # 確認が要る。テスト用 dev 依存とは分けて単独グループにする。
+      build-toolchain:
+        patterns:
+          - "typescript"
+          - "@vercel/ncc"
+        update-types:
+          - "minor"
+          - "patch"
+      # 残りの dev 依存 (jest 系, @types/*, prettier, selenium-webdriver)。
+      # dist には含まれないため、まとめて 1 PR で良い。
+      development-dependencies:
+        dependency-type: "development"
+        patterns:
+          - "*"
+        exclude-patterns:
+          - "typescript"
+          - "@vercel/ncc"
+        update-types:
+          - "minor"
+          - "patch"
