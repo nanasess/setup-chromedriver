@@ -1568,7 +1568,7 @@ module.exports = __nccwpck_require__(9023).inspect;
 
 /***/ }),
 
-/***/ 3392:
+/***/ 5188:
 /***/ ((module) => {
 
 
@@ -1598,14 +1598,14 @@ module.exports = {
 
 /***/ }),
 
-/***/ 3536:
+/***/ 6732:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var stringify = __nccwpck_require__(6813);
-var parse = __nccwpck_require__(9283);
-var formats = __nccwpck_require__(3392);
+var stringify = __nccwpck_require__(7137);
+var parse = __nccwpck_require__(7375);
+var formats = __nccwpck_require__(5188);
 
 module.exports = {
     formats: formats,
@@ -1616,12 +1616,12 @@ module.exports = {
 
 /***/ }),
 
-/***/ 9283:
+/***/ 7375:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var utils = __nccwpck_require__(649);
+var utils = __nccwpck_require__(2901);
 
 var has = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;
@@ -1657,9 +1657,9 @@ var interpretNumericEntities = function (str) {
     });
 };
 
-var parseArrayValue = function (val, options, currentArrayLength, isFlatArrayValue) {
+var parseArrayValue = function (val, options, currentArrayLength) {
     if (val && typeof val === 'string' && options.comma && val.indexOf(',') > -1) {
-        if (isFlatArrayValue && options.throwOnLimitExceeded) {
+        if (options.throwOnLimitExceeded) {
             var commaCount = 0;
             var commaIndex = val.indexOf(',');
             while (commaIndex > -1) {
@@ -1746,8 +1746,7 @@ var parseValues = function parseQueryStringValues(str, options) {
                     parseArrayValue(
                         part.slice(pos + 1),
                         options,
-                        isArray(obj[key]) ? obj[key].length : 0,
-                        part.indexOf('[]=') === -1
+                        isArray(obj[key]) ? obj[key].length : 0
                     ),
                     function (encodedVal) {
                         return options.decoder(encodedVal, defaults.decoder, charset, 'value');
@@ -2037,14 +2036,14 @@ module.exports = function (str, opts) {
 
 /***/ }),
 
-/***/ 6813:
+/***/ 7137:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 var getSideChannel = __nccwpck_require__(3116);
-var utils = __nccwpck_require__(649);
-var formats = __nccwpck_require__(3392);
+var utils = __nccwpck_require__(2901);
+var formats = __nccwpck_require__(5188);
 var has = Object.prototype.hasOwnProperty;
 
 var arrayPrefixGenerators = {
@@ -2078,6 +2077,7 @@ var defaults = {
     charsetSentinel: false,
     commaRoundTrip: false,
     delimiter: '&',
+    depth: Infinity,
     encode: true,
     encodeDotInKeys: false,
     encoder: utils.encode,
@@ -2122,9 +2122,15 @@ var stringify = function stringify(
     formatter,
     encodeValuesOnly,
     charset,
-    sideChannel
+    sideChannel,
+    depth,
+    currentDepth
 ) {
     var obj = object;
+
+    if (currentDepth > depth) {
+        throw new RangeError('Input depth exceeded depth option of ' + depth);
+    }
 
     var tmpSc = sideChannel;
     var step = 0;
@@ -2145,9 +2151,9 @@ var stringify = function stringify(
         }
     }
 
-    if (typeof filter === 'function') {
-        obj = filter(prefix, obj);
-    } else if (obj instanceof Date) {
+    obj = typeof filter === 'function' ? filter(prefix, obj) : obj;
+
+    if (obj instanceof Date) {
         obj = serializeDate(obj);
     } else if (generateArrayPrefix === 'comma' && isArray(obj)) {
         obj = utils.maybeMap(obj, function (value) {
@@ -2200,7 +2206,7 @@ var stringify = function stringify(
 
     var adjustedPrefix = commaRoundTrip && isArray(obj) && obj.length === 1 ? encodedPrefix + '[]' : encodedPrefix;
 
-    if (allowEmptyArrays && isArray(obj) && obj.length === 0) {
+    if (allowEmptyArrays && isArray(obj) && obj.length === 0 && Object.keys(obj).length === 0) {
         return adjustedPrefix + '[]';
     }
 
@@ -2240,7 +2246,9 @@ var stringify = function stringify(
             formatter,
             encodeValuesOnly,
             charset,
-            valueSideChannel
+            valueSideChannel,
+            depth,
+            currentDepth + 1
         ));
     }
 
@@ -2307,6 +2315,7 @@ var normalizeStringifyOptions = function normalizeStringifyOptions(opts) {
         charsetSentinel: typeof opts.charsetSentinel === 'boolean' ? opts.charsetSentinel : defaults.charsetSentinel,
         commaRoundTrip: !!opts.commaRoundTrip,
         delimiter: typeof opts.delimiter === 'undefined' ? defaults.delimiter : opts.delimiter,
+        depth: typeof opts.depth === 'number' ? opts.depth : defaults.depth,
         encode: typeof opts.encode === 'boolean' ? opts.encode : defaults.encode,
         encodeDotInKeys: typeof opts.encodeDotInKeys === 'boolean' ? opts.encodeDotInKeys : defaults.encodeDotInKeys,
         encoder: typeof opts.encoder === 'function' ? opts.encoder : defaults.encoder,
@@ -2366,9 +2375,12 @@ module.exports = function (object, opts) {
         if (options.skipNulls && value === null) {
             continue;
         }
+
+        var encodedKey = options.encodeDotInKeys ? String(key).replace(/\./g, '%2E') : String(key);
+
         pushToArray(keys, stringify(
             value,
-            key,
+            encodedKey,
             generateArrayPrefix,
             commaRoundTrip,
             options.allowEmptyArrays,
@@ -2384,7 +2396,9 @@ module.exports = function (object, opts) {
             options.formatter,
             options.encodeValuesOnly,
             options.charset,
-            sideChannel
+            sideChannel,
+            options.depth,
+            0
         ));
     }
 
@@ -2407,12 +2421,12 @@ module.exports = function (object, opts) {
 
 /***/ }),
 
-/***/ 649:
+/***/ 2901:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var formats = __nccwpck_require__(3392);
+var formats = __nccwpck_require__(5188);
 var getSideChannel = __nccwpck_require__(3116);
 var defineProperty = __nccwpck_require__(8103);
 
@@ -2741,7 +2755,7 @@ var isBuffer = function isBuffer(obj) {
         return false;
     }
 
-    return !!(obj.constructor && obj.constructor.isBuffer && obj.constructor.isBuffer(obj));
+    return !!(obj.constructor && typeof obj.constructor.isBuffer === 'function' && obj.constructor.isBuffer(obj));
 };
 
 var combine = function combine(a, b, arrayLimit, plainObjects, throwOnLimitExceeded) {
@@ -2750,8 +2764,15 @@ var combine = function combine(a, b, arrayLimit, plainObjects, throwOnLimitExcee
         if (throwOnLimitExceeded) {
             throw new RangeError('Array limit exceeded. Only ' + arrayLimit + ' element' + (arrayLimit === 1 ? '' : 's') + ' allowed in an array.');
         }
-        var newIndex = getMaxIndex(a) + 1;
-        a[newIndex] = b;
+        // spread `b` one level, matching the `[].concat(a, b)` used below, so a
+        // collection appended to an already-overflowed object is flattened
+        // rather than nested under a single index
+        var bValues = isArray(b) ? b : [b];
+        var newIndex = getMaxIndex(a);
+        for (var i = 0; i < bValues.length; ++i) {
+            newIndex += 1;
+            a[newIndex] = bValues[i];
+        }
         setMaxIndex(a, newIndex);
         return a;
     }
@@ -6175,7 +6196,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 4388:
+/***/ 4702:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6195,7 +6216,7 @@ exports.HttpClient = exports.HttpClientResponse = exports.HttpCodes = void 0;
 exports.isHttps = isHttps;
 const http = __nccwpck_require__(8611);
 const https = __nccwpck_require__(5692);
-const util = __nccwpck_require__(1747);
+const util = __nccwpck_require__(4653);
 let fs;
 let tunnel;
 var HttpCodes;
@@ -6696,7 +6717,7 @@ exports.HttpClient = HttpClient;
 
 /***/ }),
 
-/***/ 1747:
+/***/ 4653:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6716,7 +6737,7 @@ exports.getUrl = getUrl;
 exports.decompressGzippedContent = decompressGzippedContent;
 exports.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
 exports.obtainContentCharset = obtainContentCharset;
-const qs = __nccwpck_require__(3536);
+const qs = __nccwpck_require__(6732);
 const zlib = __nccwpck_require__(3106);
 /**
  * creates an url from a request url and optional base url (http://server:8080)
@@ -38564,8 +38585,8 @@ async function downloadAndExtractZip(url) {
     throw new Error(`Failed to download and extract ChromeDriver from ${url} after ${maxRetries} attempts: ${message}`);
 }
 
-// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@3.1.0/node_modules/typed-rest-client/HttpClient.js
-var typed_rest_client_HttpClient = __nccwpck_require__(4388);
+// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@3.1.2/node_modules/typed-rest-client/HttpClient.js
+var typed_rest_client_HttpClient = __nccwpck_require__(4702);
 ;// CONCATENATED MODULE: ./lib/installer/http.js
 /**
  * HTTP helpers used by the TypeScript rewrite of setup-chromedriver.
