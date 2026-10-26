@@ -38,12 +38,9 @@ allowBuilds:
   '@parcel/watcher': false
 
 # 推移的依存のバージョン強制 (セキュリティ修正)。
-# qs: typed-rest-client が qs@6.15.1 をピン留めしており、修正版 6.15.2 を
-# 使う上流が存在しない (最新の typed-rest-client@3.0.0 も 6.15.1 固定)。
-# GHSA-q8mj-m7cp-5q26 (qs.stringify の DoS, 脆弱 <=6.15.1 / 修正 >=6.15.2)
-# を塞ぐため override で 6.15.2 以上へ引き上げる。patch 上げで API 互換。
+# (qs の override は typed-rest-client@3.1.2 が qs@^6.16.0 を要求するように
+# なったため撤去した。)
 overrides:
-  qs: '>=6.15.2'
   # js-yaml: jest のカバレッジ機構 (@jest/transform → babel-plugin-istanbul →
   # @istanbuljs/load-nyc-config) が js-yaml@^3.13.1 をピン留めしており、修正版
   # 4.2.0 を使う上流が存在しない。GHSA (js-yaml <=4.1.1 / 修正 >=4.2.0) を塞ぐ
