@@ -28,16 +28,16 @@
     "@actions/io": "^3.0.0",
     "@actions/tool-cache": "4.0.0",
     "semver": "^7.8.5",
-    "typed-rest-client": "^3.1.0"
+    "typed-rest-client": "^3.1.2"
   },
   "devDependencies": {
+    "@jest/globals": "^30.5.2",
     "@types/jest": "^30.0.0",
     "@types/node": "^26.6.2",
     "@types/selenium-webdriver": "^4.35.7",
     "@types/semver": "^7.8.0",
     "@types/yauzl": "^3.4.0",
     "@vercel/ncc": "^0.45.0",
-    "@jest/globals": "^30.5.2",
     "jest": "^30.5.2",
     "prettier": "^3.9.8",
     "selenium-webdriver": "^4.49.0",
