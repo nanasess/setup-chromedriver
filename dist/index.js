@@ -407,7 +407,7 @@ var ThrowTypeError = $gOPD
 
 var hasSymbols = __nccwpck_require__(939)();
 
-var getProto = __nccwpck_require__(7221);
+var getProto = __nccwpck_require__(9602);
 var $ObjectGPO = __nccwpck_require__(7149);
 var $ReflectGPO = __nccwpck_require__(5927);
 
@@ -757,7 +757,7 @@ module.exports = (typeof Reflect !== 'undefined' && Reflect.getPrototypeOf) || n
 
 /***/ }),
 
-/***/ 7221:
+/***/ 9602:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -1568,7 +1568,7 @@ module.exports = __nccwpck_require__(9023).inspect;
 
 /***/ }),
 
-/***/ 1751:
+/***/ 4592:
 /***/ ((module) => {
 
 
@@ -1578,7 +1578,8 @@ var percentTwenties = /%20/g;
 
 var Format = {
     RFC1738: 'RFC1738',
-    RFC3986: 'RFC3986'
+    RFC3986: 'RFC3986',
+    WHATWG: 'WHATWG'
 };
 
 module.exports = {
@@ -1589,23 +1590,27 @@ module.exports = {
         },
         RFC3986: function (value) {
             return String(value);
+        },
+        WHATWG: function (value) {
+            return replace.call(value, percentTwenties, '+');
         }
     },
     RFC1738: Format.RFC1738,
-    RFC3986: Format.RFC3986
+    RFC3986: Format.RFC3986,
+    WHATWG: Format.WHATWG
 };
 
 
 /***/ }),
 
-/***/ 4515:
+/***/ 6624:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var stringify = __nccwpck_require__(8738);
-var parse = __nccwpck_require__(1228);
-var formats = __nccwpck_require__(1751);
+var stringify = __nccwpck_require__(6157);
+var parse = __nccwpck_require__(515);
+var formats = __nccwpck_require__(4592);
 
 module.exports = {
     formats: formats,
@@ -1616,17 +1621,18 @@ module.exports = {
 
 /***/ }),
 
-/***/ 1228:
+/***/ 515:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 var getSideChannel = __nccwpck_require__(3116);
-var utils = __nccwpck_require__(2382);
+var utils = __nccwpck_require__(6665);
 
 var has = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;
 var getPrototypeOf = Object.getPrototypeOf;
+var fromCharCode = String.fromCharCode;
 
 var isPlainContainer = function isPlainContainer(value) {
     if (!value || typeof value !== 'object') {
@@ -1660,15 +1666,16 @@ var copyInput = function copyInput(input) {
         var keys = Object.keys(source);
         for (var j = 0; j < keys.length; ++j) {
             var value = source[keys[j]];
+            // `target[key] =` would invoke the `__proto__` setter. `setProperty` stores that key as data.
             if (isPlainContainer(value)) {
                 if (!copies.has(value)) {
                     var copy = emptyCopyOf(value);
                     copies.set(value, copy);
                     queue[queue.length] = { source: value, target: copy };
                 }
-                target[keys[j]] = copies.get(value);
+                utils.setProperty(target, keys[j], copies.get(value));
             } else {
-                target[keys[j]] = value;
+                utils.setProperty(target, keys[j], value);
             }
         }
     }
@@ -1703,7 +1710,13 @@ var defaults = {
 
 var interpretNumericEntities = function (str) {
     return str.replace(/&#(\d+);/g, function ($0, numberStr) {
-        return String.fromCharCode(parseInt(numberStr, 10));
+        var c = parseInt(numberStr, 10);
+        if (c > 0xFFFF && c <= 0x10FFFF) {
+            // `String.fromCodePoint` is not available in every supported engine, so build the surrogate pair by hand
+            c -= 0x10000;
+            return fromCharCode(0xD800 | (c >> 10), 0xDC00 | (c & 0x3FF));
+        }
+        return fromCharCode(c);
     });
 };
 
@@ -1723,7 +1736,11 @@ var parseArrayValue = function (val, options, currentArrayLength) {
         return val.split(',');
     }
 
-    if (options.throwOnLimitExceeded && currentArrayLength >= options.arrayLimit) {
+    if (
+        options.throwOnLimitExceeded
+        && currentArrayLength >= options.arrayLimit
+        && currentArrayLength > 0
+    ) {
         throw new RangeError('Array limit exceeded. Only ' + options.arrayLimit + ' element' + (options.arrayLimit === 1 ? '' : 's') + ' allowed in an array.');
     }
 
@@ -1799,7 +1816,7 @@ var parseValues = function parseQueryStringValues(str, options) {
                     parseArrayValue(
                         part.slice(pos + 1),
                         options,
-                        isArray(obj[key]) ? obj[key].length : 0
+                        isArray(obj[key]) && (options.duplicates === 'combine' || isEmptyBracketKey) ? obj[key].length : 0
                     ),
                     function (encodedVal) {
                         return options.decoder(encodedVal, defaults.decoder, charset, 'value');
@@ -1809,7 +1826,9 @@ var parseValues = function parseQueryStringValues(str, options) {
         }
 
         if (val && options.interpretNumericEntities && charset === 'iso-8859-1') {
-            val = interpretNumericEntities(String(val));
+            val = utils.maybeMap(val, function (value) {
+                return value ? interpretNumericEntities(String(value)) : value;
+            });
         }
 
         if (isEmptyBracketKey) {
@@ -1837,6 +1856,10 @@ var parseValues = function parseQueryStringValues(str, options) {
     }
 
     return obj;
+};
+
+var stripWrappingBrackets = function stripWrappingBrackets(key) {
+    return key.charAt(0) === '[' && key.charAt(key.length - 1) === ']' ? key.slice(1, -1) : key;
 };
 
 var parseObject = function (chain, val, options, valuesParsed) {
@@ -1869,8 +1892,8 @@ var parseObject = function (chain, val, options, valuesParsed) {
             }
         } else {
             obj = options.plainObjects ? { __proto__: null } : {};
-            var cleanRoot = root.charAt(0) === '[' && root.charAt(root.length - 1) === ']' ? root.slice(1, -1) : root;
-            var decodedRoot = options.decodeDotInKeys ? cleanRoot.replace(/%2E/g, '.') : cleanRoot;
+            var cleanRoot = stripWrappingBrackets(root);
+            var decodedRoot = options.decodeDotInKeys ? cleanRoot.replace(/%2E/gi, '.') : cleanRoot;
             var index = parseInt(decodedRoot, 10);
             var isValidArrayIndex = !isNaN(index)
                 && root !== decodedRoot
@@ -1878,7 +1901,7 @@ var parseObject = function (chain, val, options, valuesParsed) {
                 && index >= 0
                 && options.parseArrays;
             if (!options.parseArrays && decodedRoot === '') {
-                obj = { 0: leaf };
+                obj[0] = leaf;
             } else if (isValidArrayIndex && index < options.arrayLimit) {
                 obj = [];
                 obj[index] = leaf;
@@ -1942,7 +1965,8 @@ var splitKeyIntoSegments = function splitKeyIntoSegments(originalKey, options) {
 
     // depth <= 0 keeps the whole key as one segment
     if (options.depth <= 0) {
-        if (!options.plainObjects && has.call(Object.prototype, key)) {
+        // `parseObject` strips one wrapping bracket pair, so guard the key it will store ("[toString]" -> "toString")
+        if (!options.plainObjects && has.call(Object.prototype, stripWrappingBrackets(key))) {
             if (!options.allowPrototypes) {
                 return;
             }
@@ -2126,14 +2150,14 @@ module.exports = function (str, opts) {
 
 /***/ }),
 
-/***/ 8738:
+/***/ 6157:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 var getSideChannel = __nccwpck_require__(3116);
-var utils = __nccwpck_require__(2382);
-var formats = __nccwpck_require__(1751);
+var utils = __nccwpck_require__(6665);
+var formats = __nccwpck_require__(4592);
 var has = Object.prototype.hasOwnProperty;
 
 var arrayPrefixGenerators = {
@@ -2297,7 +2321,7 @@ var stringify = function stringify(
     var adjustedPrefix = commaRoundTrip && isArray(obj) && obj.length === 1 ? encodedPrefix + '[]' : encodedPrefix;
 
     if (allowEmptyArrays && isArray(obj) && obj.length === 0 && Object.keys(obj).length === 0) {
-        return adjustedPrefix + '[]';
+        return formatter(encoder && !encodeValuesOnly ? encoder(adjustedPrefix, defaults.encoder, charset, 'key', format) : adjustedPrefix) + '[]';
     }
 
     for (var j = 0; j < objKeys.length; ++j) {
@@ -2431,7 +2455,9 @@ module.exports = function (object, opts) {
         filter = options.filter;
         obj = filter('', obj);
     } else if (isArray(options.filter)) {
-        filter = options.filter;
+        // a copy: `sort` below must not reorder the caller's array, and nested
+        // levels take their key order from the sorted copy
+        filter = options.filter.slice();
         objKeys = filter;
     }
 
@@ -2478,7 +2504,7 @@ module.exports = function (object, opts) {
             options.skipNulls,
             options.encodeDotInKeys,
             options.encode ? options.encoder : null,
-            options.filter,
+            filter,
             options.sort,
             options.allowDots,
             options.serializeDate,
@@ -2511,12 +2537,12 @@ module.exports = function (object, opts) {
 
 /***/ }),
 
-/***/ 2382:
+/***/ 6665:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-var formats = __nccwpck_require__(1751);
+var formats = __nccwpck_require__(4592);
 var getSideChannel = __nccwpck_require__(3116);
 var defineProperty = __nccwpck_require__(8103);
 
@@ -2626,6 +2652,17 @@ var maxNumericIndex = function maxNumericIndex(obj, min) {
     return max;
 };
 
+// parsed arrays stay sparse until `compact`, so `length` would count the holes left by indices like `a[19]`
+var countElements = function countElements(arr) {
+    var count = 0;
+    for (var i = 0; i < arr.length; ++i) {
+        if (has.call(arr, i)) {
+            count += 1;
+        }
+    }
+    return count;
+};
+
 var limitedPair = function limitedPair(first, second, options) {
     var pair = [first, second];
     if (options && typeof options.arrayLimit === 'number' && pair.length > options.arrayLimit) {
@@ -2646,7 +2683,7 @@ var merge = function merge(target, source, options) {
     if (typeof source !== 'object' && typeof source !== 'function') {
         if (isArray(target)) {
             var nextIndex = target.length;
-            if (options && typeof options.arrayLimit === 'number' && nextIndex >= options.arrayLimit) {
+            if (options && typeof options.arrayLimit === 'number' && countElements(target) >= options.arrayLimit) {
                 if (options.throwOnLimitExceeded) {
                     throw new RangeError('Array limit exceeded. Only ' + options.arrayLimit + ' element' + (options.arrayLimit === 1 ? '' : 's') + ' allowed in an array.');
                 }
@@ -2731,7 +2768,7 @@ var merge = function merge(target, source, options) {
                 target[i] = item;
             }
         });
-        if (options && typeof options.arrayLimit === 'number' && target.length > options.arrayLimit) {
+        if (options && typeof options.arrayLimit === 'number' && countElements(target) > options.arrayLimit) {
             if (options.throwOnLimitExceeded) {
                 throw new RangeError('Array limit exceeded. Only ' + options.arrayLimit + ' element' + (options.arrayLimit === 1 ? '' : 's') + ' allowed in an array.');
             }
@@ -2892,11 +2929,12 @@ var encode = function encode(str, defaultEncoder, charset, kind, format) {
                 c === 0x2D // -
                 || c === 0x2E // .
                 || c === 0x5F // _
-                || c === 0x7E // ~
+                || (c === 0x7E && format !== formats.WHATWG) // ~
                 || (c >= 0x30 && c <= 0x39) // 0-9
                 || (c >= 0x41 && c <= 0x5A) // a-z
                 || (c >= 0x61 && c <= 0x7A) // A-Z
                 || (format === formats.RFC1738 && (c === 0x28 || c === 0x29)) // ( )
+                || (format === formats.WHATWG && c === 0x2A) // *
             ) {
                 arr[arr.length] = segment.charAt(i);
                 continue;
@@ -2920,13 +2958,19 @@ var encode = function encode(str, defaultEncoder, charset, kind, format) {
                 continue;
             }
 
-            i += 1;
-            c = 0x10000 + (((c & 0x3FF) << 10) | (segment.charCodeAt(i) & 0x3FF));
+            var next = segment.charCodeAt(i + 1);
+            if (c <= 0xDBFF && next >= 0xDC00 && next <= 0xDFFF) {
+                i += 1;
+                c = 0x10000 + (((c & 0x3FF) << 10) | (next & 0x3FF));
 
-            arr[arr.length] = hexTable[0xF0 | (c >> 18)]
-                + hexTable[0x80 | ((c >> 12) & 0x3F)]
-                + hexTable[0x80 | ((c >> 6) & 0x3F)]
-                + hexTable[0x80 | (c & 0x3F)];
+                arr[arr.length] = hexTable[0xF0 | (c >> 18)]
+                    + hexTable[0x80 | ((c >> 12) & 0x3F)]
+                    + hexTable[0x80 | ((c >> 6) & 0x3F)]
+                    + hexTable[0x80 | (c & 0x3F)];
+            } else {
+                // a lone surrogate has no UTF-8 encoding; like `URLSearchParams` and `TextEncoder`, emit U+FFFD
+                arr[arr.length] = '%EF%BF%BD';
+            }
         }
 
         out += arr.join('');
@@ -3024,13 +3068,14 @@ module.exports = {
     markOverflow: markOverflow,
     maybeMap: maybeMap,
     merge: merge,
+    setProperty: setProperty,
     toCoercible: toCoercible
 };
 
 
 /***/ }),
 
-/***/ 2980:
+/***/ 5275:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -3170,17 +3215,17 @@ class Comparator {
 
 module.exports = Comparator
 
-const parseOptions = __nccwpck_require__(8183)
-const { safeRe: re, t } = __nccwpck_require__(4418)
-const cmp = __nccwpck_require__(5747)
-const debug = __nccwpck_require__(3268)
-const SemVer = __nccwpck_require__(8667)
-const Range = __nccwpck_require__(4027)
+const parseOptions = __nccwpck_require__(7308)
+const { safeRe: re, t } = __nccwpck_require__(3191)
+const cmp = __nccwpck_require__(8446)
+const debug = __nccwpck_require__(5519)
+const SemVer = __nccwpck_require__(1603)
+const Range = __nccwpck_require__(9046)
 
 
 /***/ }),
 
-/***/ 4027:
+/***/ 9046:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -3304,7 +3349,7 @@ class Range {
     debug('hyphen replace', range)
 
     // `> 1.2.3 < 1.2.5` => `>1.2.3 <1.2.5`
-    range = range.replace(re[t.COMPARATORTRIM], comparatorTrimReplace)
+    range = trimComparatorWhitespace(range)
     debug('comparator trim', range)
 
     // `~ 1.2.3` => `~1.2.3`
@@ -3402,22 +3447,22 @@ class Range {
 
 module.exports = Range
 
-const LRU = __nccwpck_require__(7366)
+const LRU = __nccwpck_require__(1663)
 const cache = new LRU()
 
-const parseOptions = __nccwpck_require__(8183)
-const Comparator = __nccwpck_require__(2980)
-const debug = __nccwpck_require__(3268)
-const SemVer = __nccwpck_require__(8667)
+const parseOptions = __nccwpck_require__(7308)
+const Comparator = __nccwpck_require__(5275)
+const debug = __nccwpck_require__(5519)
+const SemVer = __nccwpck_require__(1603)
+const trimComparatorWhitespace = __nccwpck_require__(1777)
 const {
   safeRe: re,
   src,
   t,
-  comparatorTrimReplace,
   tildeTrimReplace,
   caretTrimReplace,
-} = __nccwpck_require__(4418)
-const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = __nccwpck_require__(6974)
+} = __nccwpck_require__(3191)
+const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = __nccwpck_require__(8114)
 
 // unbounded global build-metadata stripper used by parseRange
 const BUILDSTRIPRE = new RegExp(src[t.BUILD], 'g')
@@ -3764,17 +3809,17 @@ const testSet = (set, version, options) => {
 
 /***/ }),
 
-/***/ 8667:
+/***/ 1603:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const debug = __nccwpck_require__(3268)
-const { MAX_LENGTH, MAX_SAFE_INTEGER } = __nccwpck_require__(6974)
-const { safeRe: re, t } = __nccwpck_require__(4418)
+const debug = __nccwpck_require__(5519)
+const { MAX_LENGTH, MAX_SAFE_INTEGER } = __nccwpck_require__(8114)
+const { safeRe: re, t } = __nccwpck_require__(3191)
 
-const parseOptions = __nccwpck_require__(8183)
-const { compareIdentifiers } = __nccwpck_require__(6127)
+const parseOptions = __nccwpck_require__(7308)
+const { compareIdentifiers } = __nccwpck_require__(9916)
 
 const isPrereleaseIdentifier = (prerelease, identifier) => {
   const identifiers = identifier.split('.')
@@ -4121,12 +4166,12 @@ module.exports = SemVer
 
 /***/ }),
 
-/***/ 9914:
+/***/ 9455:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(3140)
+const parse = __nccwpck_require__(1817)
 const clean = (version, options) => {
   const s = parse(version.trim().replace(/^[=v]+/, ''), options)
   return s ? s.version : null
@@ -4136,17 +4181,17 @@ module.exports = clean
 
 /***/ }),
 
-/***/ 5747:
+/***/ 8446:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const eq = __nccwpck_require__(1421)
-const neq = __nccwpck_require__(6235)
-const gt = __nccwpck_require__(5152)
-const gte = __nccwpck_require__(9213)
-const lt = __nccwpck_require__(2583)
-const lte = __nccwpck_require__(3796)
+const eq = __nccwpck_require__(3714)
+const neq = __nccwpck_require__(6518)
+const gt = __nccwpck_require__(5743)
+const gte = __nccwpck_require__(972)
+const lt = __nccwpck_require__(3896)
+const lte = __nccwpck_require__(7221)
 
 const cmp = (a, op, b, loose) => {
   switch (op) {
@@ -4197,14 +4242,14 @@ module.exports = cmp
 
 /***/ }),
 
-/***/ 9750:
+/***/ 9889:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
-const parse = __nccwpck_require__(3140)
-const { safeRe: re, t } = __nccwpck_require__(4418)
+const SemVer = __nccwpck_require__(1603)
+const parse = __nccwpck_require__(1817)
+const { safeRe: re, t } = __nccwpck_require__(3191)
 
 const coerce = (version, options) => {
   if (version instanceof SemVer) {
@@ -4266,12 +4311,12 @@ module.exports = coerce
 
 /***/ }),
 
-/***/ 2097:
+/***/ 9256:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 const compareBuild = (a, b, loose) => {
   const versionA = new SemVer(a, loose)
   const versionB = new SemVer(b, loose)
@@ -4282,24 +4327,24 @@ module.exports = compareBuild
 
 /***/ }),
 
-/***/ 5135:
+/***/ 2498:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const compareLoose = (a, b) => compare(a, b, true)
 module.exports = compareLoose
 
 
 /***/ }),
 
-/***/ 676:
+/***/ 6061:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 const compare = (a, b, loose) =>
   new SemVer(a, loose).compare(new SemVer(b, loose))
 
@@ -4308,12 +4353,12 @@ module.exports = compare
 
 /***/ }),
 
-/***/ 3700:
+/***/ 7535:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(3140)
+const parse = __nccwpck_require__(1817)
 
 const diff = (version1, version2) => {
   const v1 = parse(version1, null, true)
@@ -4375,48 +4420,48 @@ module.exports = diff
 
 /***/ }),
 
-/***/ 1421:
+/***/ 3714:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const eq = (a, b, loose) => compare(a, b, loose) === 0
 module.exports = eq
 
 
 /***/ }),
 
-/***/ 5152:
+/***/ 5743:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const gt = (a, b, loose) => compare(a, b, loose) > 0
 module.exports = gt
 
 
 /***/ }),
 
-/***/ 9213:
+/***/ 972:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const gte = (a, b, loose) => compare(a, b, loose) >= 0
 module.exports = gte
 
 
 /***/ }),
 
-/***/ 5875:
+/***/ 4858:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 
 const inc = (version, release, options, identifier, identifierBase) => {
   if (typeof (options) === 'string') {
@@ -4439,72 +4484,72 @@ module.exports = inc
 
 /***/ }),
 
-/***/ 2583:
+/***/ 3896:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const lt = (a, b, loose) => compare(a, b, loose) < 0
 module.exports = lt
 
 
 /***/ }),
 
-/***/ 3796:
+/***/ 7221:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const lte = (a, b, loose) => compare(a, b, loose) <= 0
 module.exports = lte
 
 
 /***/ }),
 
-/***/ 550:
+/***/ 4567:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 const major = (a, loose) => new SemVer(a, loose).major
 module.exports = major
 
 
 /***/ }),
 
-/***/ 1362:
+/***/ 8467:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 const minor = (a, loose) => new SemVer(a, loose).minor
 module.exports = minor
 
 
 /***/ }),
 
-/***/ 6235:
+/***/ 6518:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const neq = (a, b, loose) => compare(a, b, loose) !== 0
 module.exports = neq
 
 
 /***/ }),
 
-/***/ 3140:
+/***/ 1817:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 const parse = (version, options, throwErrors = false) => {
   if (version instanceof SemVer) {
     return version
@@ -4524,24 +4569,24 @@ module.exports = parse
 
 /***/ }),
 
-/***/ 9329:
+/***/ 3276:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
+const SemVer = __nccwpck_require__(1603)
 const patch = (a, loose) => new SemVer(a, loose).patch
 module.exports = patch
 
 
 /***/ }),
 
-/***/ 4989:
+/***/ 4282:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(3140)
+const parse = __nccwpck_require__(1817)
 const prerelease = (version, options) => {
   const parsed = parse(version, options)
   return (parsed && parsed.prerelease.length) ? parsed.prerelease : null
@@ -4551,36 +4596,36 @@ module.exports = prerelease
 
 /***/ }),
 
-/***/ 9358:
+/***/ 6149:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compare = __nccwpck_require__(676)
+const compare = __nccwpck_require__(6061)
 const rcompare = (a, b, loose) => compare(b, a, loose)
 module.exports = rcompare
 
 
 /***/ }),
 
-/***/ 5841:
+/***/ 4624:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compareBuild = __nccwpck_require__(2097)
+const compareBuild = __nccwpck_require__(9256)
 const rsort = (list, loose) => list.sort((a, b) => compareBuild(b, a, loose))
 module.exports = rsort
 
 
 /***/ }),
 
-/***/ 2170:
+/***/ 883:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(4027)
+const Range = __nccwpck_require__(9046)
 const satisfies = (version, range, options) => {
   try {
     range = new Range(range, options)
@@ -4594,26 +4639,26 @@ module.exports = satisfies
 
 /***/ }),
 
-/***/ 7336:
+/***/ 4888:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const compareBuild = __nccwpck_require__(2097)
+const compareBuild = __nccwpck_require__(9256)
 const sort = (list, loose) => list.sort((a, b) => compareBuild(a, b, loose))
 module.exports = sort
 
 
 /***/ }),
 
-/***/ 2941:
+/***/ 8314:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(3140)
-const constants = __nccwpck_require__(6974)
-const SemVer = __nccwpck_require__(8667)
+const parse = __nccwpck_require__(1817)
+const constants = __nccwpck_require__(8114)
+const SemVer = __nccwpck_require__(1603)
 
 const truncate = (version, truncation, options) => {
   if (!constants.RELEASE_TYPES.includes(truncation)) {
@@ -4661,12 +4706,12 @@ module.exports = truncate
 
 /***/ }),
 
-/***/ 5533:
+/***/ 1988:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const parse = __nccwpck_require__(3140)
+const parse = __nccwpck_require__(1817)
 const valid = (version, options) => {
   const v = parse(version, options)
   return v ? v.version : null
@@ -4676,54 +4721,54 @@ module.exports = valid
 
 /***/ }),
 
-/***/ 8113:
+/***/ 2320:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 // just pre-load all the stuff that index.js lazily exports
-const internalRe = __nccwpck_require__(4418)
-const constants = __nccwpck_require__(6974)
-const SemVer = __nccwpck_require__(8667)
-const identifiers = __nccwpck_require__(6127)
-const parse = __nccwpck_require__(3140)
-const valid = __nccwpck_require__(5533)
-const clean = __nccwpck_require__(9914)
-const inc = __nccwpck_require__(5875)
-const diff = __nccwpck_require__(3700)
-const major = __nccwpck_require__(550)
-const minor = __nccwpck_require__(1362)
-const patch = __nccwpck_require__(9329)
-const prerelease = __nccwpck_require__(4989)
-const compare = __nccwpck_require__(676)
-const rcompare = __nccwpck_require__(9358)
-const compareLoose = __nccwpck_require__(5135)
-const compareBuild = __nccwpck_require__(2097)
-const sort = __nccwpck_require__(7336)
-const rsort = __nccwpck_require__(5841)
-const gt = __nccwpck_require__(5152)
-const lt = __nccwpck_require__(2583)
-const eq = __nccwpck_require__(1421)
-const neq = __nccwpck_require__(6235)
-const gte = __nccwpck_require__(9213)
-const lte = __nccwpck_require__(3796)
-const cmp = __nccwpck_require__(5747)
-const coerce = __nccwpck_require__(9750)
-const truncate = __nccwpck_require__(2941)
-const Comparator = __nccwpck_require__(2980)
-const Range = __nccwpck_require__(4027)
-const satisfies = __nccwpck_require__(2170)
-const toComparators = __nccwpck_require__(3259)
-const maxSatisfying = __nccwpck_require__(5808)
-const minSatisfying = __nccwpck_require__(9162)
-const minVersion = __nccwpck_require__(8449)
-const validRange = __nccwpck_require__(374)
-const outside = __nccwpck_require__(6647)
-const gtr = __nccwpck_require__(1743)
-const ltr = __nccwpck_require__(8282)
-const intersects = __nccwpck_require__(1064)
-const simplifyRange = __nccwpck_require__(3145)
-const subset = __nccwpck_require__(3620)
+const internalRe = __nccwpck_require__(3191)
+const constants = __nccwpck_require__(8114)
+const SemVer = __nccwpck_require__(1603)
+const identifiers = __nccwpck_require__(9916)
+const parse = __nccwpck_require__(1817)
+const valid = __nccwpck_require__(1988)
+const clean = __nccwpck_require__(9455)
+const inc = __nccwpck_require__(4858)
+const diff = __nccwpck_require__(7535)
+const major = __nccwpck_require__(4567)
+const minor = __nccwpck_require__(8467)
+const patch = __nccwpck_require__(3276)
+const prerelease = __nccwpck_require__(4282)
+const compare = __nccwpck_require__(6061)
+const rcompare = __nccwpck_require__(6149)
+const compareLoose = __nccwpck_require__(2498)
+const compareBuild = __nccwpck_require__(9256)
+const sort = __nccwpck_require__(4888)
+const rsort = __nccwpck_require__(4624)
+const gt = __nccwpck_require__(5743)
+const lt = __nccwpck_require__(3896)
+const eq = __nccwpck_require__(3714)
+const neq = __nccwpck_require__(6518)
+const gte = __nccwpck_require__(972)
+const lte = __nccwpck_require__(7221)
+const cmp = __nccwpck_require__(8446)
+const coerce = __nccwpck_require__(9889)
+const truncate = __nccwpck_require__(8314)
+const Comparator = __nccwpck_require__(5275)
+const Range = __nccwpck_require__(9046)
+const satisfies = __nccwpck_require__(883)
+const toComparators = __nccwpck_require__(9830)
+const maxSatisfying = __nccwpck_require__(5377)
+const minSatisfying = __nccwpck_require__(2235)
+const minVersion = __nccwpck_require__(2210)
+const validRange = __nccwpck_require__(7705)
+const outside = __nccwpck_require__(5472)
+const gtr = __nccwpck_require__(940)
+const ltr = __nccwpck_require__(9605)
+const intersects = __nccwpck_require__(6465)
+const simplifyRange = __nccwpck_require__(7076)
+const subset = __nccwpck_require__(6585)
 module.exports = {
   parse,
   valid,
@@ -4776,7 +4821,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 6974:
+/***/ 8114:
 /***/ ((module) => {
 
 
@@ -4796,6 +4841,35 @@ const MAX_SAFE_COMPONENT_LENGTH = 16
 // the shortest version with a build 0.0.0+BUILD.
 const MAX_SAFE_BUILD_LENGTH = MAX_LENGTH - 6
 
+// ECMAScript whitespace and line terminators matched by \s.
+const WHITESPACE_CHARACTERS = [
+  '\t',
+  '\n',
+  '\v',
+  '\f',
+  '\r',
+  ' ',
+  '\u00a0',
+  '\u1680',
+  '\u2000',
+  '\u2001',
+  '\u2002',
+  '\u2003',
+  '\u2004',
+  '\u2005',
+  '\u2006',
+  '\u2007',
+  '\u2008',
+  '\u2009',
+  '\u200a',
+  '\u2028',
+  '\u2029',
+  '\u202f',
+  '\u205f',
+  '\u3000',
+  '\ufeff',
+]
+
 const RELEASE_TYPES = [
   'major',
   'premajor',
@@ -4811,6 +4885,7 @@ module.exports = {
   MAX_SAFE_COMPONENT_LENGTH,
   MAX_SAFE_BUILD_LENGTH,
   MAX_SAFE_INTEGER,
+  WHITESPACE_CHARACTERS,
   RELEASE_TYPES,
   SEMVER_SPEC_VERSION,
   FLAG_INCLUDE_PRERELEASE: 0b001,
@@ -4820,7 +4895,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 3268:
+/***/ 5519:
 /***/ ((module) => {
 
 
@@ -4838,7 +4913,7 @@ module.exports = debug
 
 /***/ }),
 
-/***/ 6127:
+/***/ 9916:
 /***/ ((module) => {
 
 
@@ -4874,7 +4949,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 7366:
+/***/ 1663:
 /***/ ((module) => {
 
 
@@ -4923,7 +4998,7 @@ module.exports = LRUCache
 
 /***/ }),
 
-/***/ 8183:
+/***/ 7308:
 /***/ ((module) => {
 
 
@@ -4947,7 +5022,7 @@ module.exports = parseOptions
 
 /***/ }),
 
-/***/ 4418:
+/***/ 3191:
 /***/ ((module, exports, __nccwpck_require__) => {
 
 
@@ -4956,8 +5031,8 @@ const {
   MAX_SAFE_COMPONENT_LENGTH,
   MAX_SAFE_BUILD_LENGTH,
   MAX_LENGTH,
-} = __nccwpck_require__(6974)
-const debug = __nccwpck_require__(3268)
+} = __nccwpck_require__(8114)
+const debug = __nccwpck_require__(5519)
 exports = module.exports = {}
 
 // The actual regexps go on exports.re
@@ -5177,25 +5252,470 @@ createToken('GTE0PRE', '^\\s*>=\\s*0\\.0\\.0-0\\s*$')
 
 /***/ }),
 
-/***/ 1743:
+/***/ 1777:
+/***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
+
+// @ts-check
+
+
+// Reproduce safeRe[COMPARATORTRIM] replacement boundaries, not version
+// validation. Each end-index finder returns an exclusive end, or its start
+// on no match.
+// Positions count from zero. An end of 3 means characters 0, 1, and 2 were read;
+// range.slice(start, end) gives the matched text, not a converted number.
+const {
+  MAX_LENGTH,
+  MAX_SAFE_BUILD_LENGTH,
+  WHITESPACE_CHARACTERS,
+} = __nccwpck_require__(8114)
+
+/**
+ * Remembers the last two rows of digits so their characters need not be reread.
+ * Positions start at -1 until a row has been found.
+ *
+ * @typedef {object} DigitRunCache
+ * @property {number} start The first character of the most recently found row.
+ * @property {number} end The position after that row's last character.
+ * @property {number} previousStart The first character of the previous row.
+ * @property {number} previousEnd The position after the previous row.
+ */
+
+// One entry per UTF-16 code unit keeps membership checks constant-time.
+const whitespace = new Uint8Array(0x10000)
+for (const char of WHITESPACE_CHARACTERS) {
+  whitespace[char.charCodeAt(0)] = 1
+}
+
+/**
+ * Checks whether a character is whitespace, like a space, tab, or newline.
+ * Looking past the end of the string returns false.
+ *
+ * @param {string|undefined} char One character, or undefined past the string's end.
+ * @returns {boolean} Whether the character is whitespace.
+ * @example isWhitespace(' ') // true
+ * @example isWhitespace('1') // false
+ */
+const isWhitespace = char =>
+  char !== undefined && whitespace[char.charCodeAt(0)] === 1
+
+/**
+ * Checks for v, =, or whitespace before the version number.
+ * These are historical version prefixes, not range operators:
+ * < and > are handled separately, as are tilde and caret ranges.
+ *
+ * @param {string|undefined} char One character to check.
+ * @returns {boolean} Whether the character can belong to a version prefix.
+ * @example isVersionPrefix('=') // true
+ * @example isVersionPrefix('>') // false
+ */
+const isVersionPrefix = char =>
+  char === 'v' ||
+  char === '=' ||
+  isWhitespace(char)
+
+/**
+ * Checks whether a character is one of the digits 0 through 9.
+ *
+ * @param {string|undefined} char One character to check.
+ * @returns {boolean} Whether the character is an ASCII digit.
+ * @example isDigit('7') // true
+ * @example isDigit('.') // false
+ */
+const isDigit = char => char !== undefined && char >= '0' && char <= '9'
+
+/**
+ * Checks whether a character is an English letter, uppercase or lowercase.
+ *
+ * @param {string|undefined} char One character to check.
+ * @returns {boolean} Whether the character is an ASCII letter.
+ * @example isLetter('b') // true
+ * @example isLetter('7') // false
+ */
+const isLetter = char =>
+  char !== undefined && (
+    (char >= 'a' && char <= 'z') ||
+    (char >= 'A' && char <= 'Z')
+  )
+
+/**
+ * Checks for a letter, digit, or hyphen: the characters allowed inside
+ * prerelease and build names such as beta-1.
+ *
+ * @param {string|undefined} char One character to check.
+ * @returns {boolean} Whether the character can be part of an identifier.
+ * @example isIdentifierCharacter('-') // true
+ * @example isIdentifierCharacter('.') // false; dots separate identifiers
+ */
+const isIdentifierCharacter = char => isDigit(char) || isLetter(char) || char === '-'
+
+/**
+ * Checks whether a version component can begin here: with a digit or
+ * a wildcard such as x, X, or *.
+ *
+ * @param {string|undefined} char One character to check.
+ * @returns {boolean} Whether a number or wildcard can start with this character.
+ * @example isVersionStart('x') // true
+ * @example isVersionStart('v') // false; v belongs to the prefix
+ */
+const isVersionStart = char =>
+  isDigit(char) ||
+  char === 'x' ||
+  char === 'X' ||
+  char === '*'
+
+/**
+ * Finds the end of a row of digits, but returns no more than limit digits.
+ * Remembers the last two rows so looking at them again does not reread them.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position of the first character to check.
+ * @param {number} limit The most digit characters the returned match can include.
+ * @param {DigitRunCache} digitRuns Shared cache of digit-run positions, updated in place.
+ * @returns {number} The position after the matched digits, or start if none match.
+ * @example findDigitsEndIndex('123abc', 0, 10, digitRuns) // 3, pointing at a
+ * @example findDigitsEndIndex('123abc', 0, 2, digitRuns) // 2, pointing at the unread 3
+ */
+const findDigitsEndIndex = (range, start, limit, digitRuns) => {
+  if (!isDigit(range[start])) {
+    return start
+  }
+  if (start >= digitRuns.start && start < digitRuns.end) {
+    return Math.min(start + limit, digitRuns.end)
+  }
+  if (start >= digitRuns.previousStart && start < digitRuns.previousEnd) {
+    return Math.min(start + limit, digitRuns.previousEnd)
+  }
+  let end = start + 1
+  while (isDigit(range[end])) {
+    end++
+  }
+  // A failed full version can rewind from its second run to its first.
+  digitRuns.previousStart = digitRuns.start
+  digitRuns.previousEnd = digitRuns.end
+  digitRuns.start = start
+  digitRuns.end = end
+  return Math.min(start + limit, end)
+}
+
+/**
+ * Reads a number using the old regex's length and leading-zero rules.
+ * Strict mode reads just the first zero in 012; loose mode can read all three.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position where the number should begin.
+ * @param {boolean} loose Whether to allow leading zeros.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position after the matched digits, not their numeric value.
+ * @example findVersionNumberEndIndex('012', 0, false, digitRuns) // 1
+ * @example findVersionNumberEndIndex('012', 0, true, digitRuns) // 3
+ */
+const findVersionNumberEndIndex = (range, start, loose, digitRuns) => {
+  if (!loose && range[start] === '0') {
+    return start + 1
+  }
+  // Strict syntax allows an initial nonzero digit plus MAX_LENGTH digits.
+  return findDigitsEndIndex(range, start, loose ? MAX_LENGTH : MAX_LENGTH + 1, digitRuns)
+}
+
+/**
+ * Reads one piece of a prerelease name, such as beta or 1 in beta.1.
+ * Tries the letter-or-hyphen form first, then the number-only form.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position where the identifier should begin.
+ * @param {boolean} loose Whether numeric identifiers may have leading zeros.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position after the identifier, or start if none matches.
+ * @example findPrereleaseIdentifierEndIndex('beta.1', 0, false, digitRuns) // 4, at the dot
+ * @example findPrereleaseIdentifierEndIndex('001beta', 0, false, digitRuns) // 7
+ */
+const findPrereleaseIdentifierEndIndex = (range, start, loose, digitRuns) => {
+  const digitsEnd = findDigitsEndIndex(range, start, MAX_LENGTH, digitRuns)
+  // The legacy regex tries a nonnumeric identifier before a numeric one.
+  if (isLetter(range[digitsEnd]) || range[digitsEnd] === '-') {
+    let end = digitsEnd + 1
+    const limit = end + MAX_SAFE_BUILD_LENGTH
+    while (end < limit && isIdentifierCharacter(range[end])) {
+      end++
+    }
+    return end
+  }
+  return findVersionNumberEndIndex(range, start, loose, digitRuns)
+}
+
+/**
+ * Reads a prerelease suffix such as -beta.1, one dot-separated piece at a time.
+ * Loose mode also allows the name without its opening hyphen.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position where the suffix should begin, including -.
+ * @param {boolean} loose Whether the opening hyphen is optional and zeros allowed.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position after the matched suffix, or start if absent.
+ * @example findPrereleaseEndIndex('-beta.1+sha', 0, false, digitRuns) // 7, at the plus
+ * @example findPrereleaseEndIndex('beta', 0, false, digitRuns) // 0; no opening hyphen
+ */
+const findPrereleaseEndIndex = (range, start, loose, digitRuns) => {
+  const hyphen = range[start] === '-'
+  if (!loose && !hyphen) {
+    return start
+  }
+  const identifierStart = start + (hyphen ? 1 : 0)
+  let end = findPrereleaseIdentifierEndIndex(range, identifierStart, loose, digitRuns)
+  if (end === identifierStart) {
+    if (!loose || !hyphen) {
+      return start
+    }
+    // In loose syntax, a lone hyphen can itself be the identifier.
+    end = findPrereleaseIdentifierEndIndex(range, start, loose, digitRuns)
+  }
+  while (range[end] === '.') {
+    const next = findPrereleaseIdentifierEndIndex(range, end + 1, loose, digitRuns)
+    if (next === end + 1) {
+      break
+    }
+    end = next
+  }
+  return end
+}
+
+/**
+ * Reads one build-name piece, such as sha or 123 in +sha.123.
+ * Stops at a disallowed character or the old regex's length limit.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position where the identifier should begin.
+ * @returns {number} The position after the identifier, or start if none matches.
+ * @example findBuildIdentifierEndIndex('sha.123', 0) // 3, at the dot
+ * @example findBuildIdentifierEndIndex('001', 0) // 3; leading zeros are allowed
+ */
+const findBuildIdentifierEndIndex = (range, start) => {
+  let end = start
+  while (end - start < MAX_SAFE_BUILD_LENGTH && isIdentifierCharacter(range[end])) {
+    end++
+  }
+  return end
+}
+
+/**
+ * Reads optional build metadata such as +sha.123.
+ * Leaves the position unchanged if there is no plus sign followed by a name.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position where the opening + should be.
+ * @returns {number} The position after the matched metadata, or start if absent.
+ * @example findBuildEndIndex('+sha.123 <2', 0) // 8, at the space
+ * @example findBuildEndIndex('+', 0) // 0; a plus sign alone is not a match
+ */
+const findBuildEndIndex = (range, start) => {
+  if (range[start] !== '+') {
+    return start
+  }
+  let end = findBuildIdentifierEndIndex(range, start + 1)
+  if (end === start + 1) {
+    return start
+  }
+  while (range[end] === '.') {
+    const next = findBuildIdentifierEndIndex(range, end + 1)
+    if (next === end + 1) {
+      break
+    }
+    end = next
+  }
+  return end
+}
+
+/**
+ * Reads three numbers separated by dots, then any prerelease and build suffixes.
+ * Uses loose rules, so forms such as 01.02.03beta can match here.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position of the first number, after any prefix.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position after the version match, or start if none matches.
+ * @example findLooseFullVersionEndIndex('1.2.3-beta+sha <2', 0, digitRuns) // 14
+ * @example findLooseFullVersionEndIndex('1.2', 0, digitRuns) // 0; needs three numbers
+ */
+const findLooseFullVersionEndIndex = (range, start, digitRuns) => {
+  let end = start
+  for (let component = 0; component < 3; component++) {
+    const next = findVersionNumberEndIndex(range, end, true, digitRuns)
+    if (next === end) {
+      return start
+    }
+    end = next
+    if (component < 2) {
+      if (range[end] !== '.') {
+        return start
+      }
+      end++
+    }
+  }
+  const prereleaseEnd = findPrereleaseEndIndex(range, end, true, digitRuns)
+  return findBuildEndIndex(range, prereleaseEnd)
+}
+
+/**
+ * Reads one component of a partial or wildcard version, such as 2 or x in 2.x.
+ * Numbers use strict leading-zero rules; wildcards take up one character.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position where the component should begin.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position after the component, or start if none matches.
+ * @example findPartialVersionComponentEndIndex('2.x', 0, digitRuns) // 1, at the dot
+ * @example findPartialVersionComponentEndIndex('2.x', 2, digitRuns) // 3, after x
+ */
+const findPartialVersionComponentEndIndex = (range, start, digitRuns) => {
+  if (isDigit(range[start])) {
+    return findVersionNumberEndIndex(range, start, false, digitRuns)
+  }
+  return isVersionStart(range[start]) ? start + 1 : start
+}
+
+/**
+ * Reads up to three components, allowing forms such as 1, 1.2, or 1.x.
+ * After the third component, also reads any strict prerelease and build suffixes.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position of a number or wildcard, after any prefix.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position after the matched version text.
+ * @example findPartialVersionEndIndex('1.x <2', 0, digitRuns) // 3, at the space
+ * @example findPartialVersionEndIndex('1.', 0, digitRuns) // 1; the trailing dot is unread
+ */
+const findPartialVersionEndIndex = (range, start, digitRuns) => {
+  let end = findPartialVersionComponentEndIndex(range, start, digitRuns)
+  for (let component = 0; component < 2; component++) {
+    if (range[end] !== '.') {
+      return end
+    }
+    const next = findPartialVersionComponentEndIndex(range, end + 1, digitRuns)
+    if (next === end + 1) {
+      return end
+    }
+    end = next
+  }
+  const prereleaseEnd = findPrereleaseEndIndex(range, end, false, digitRuns)
+  return findBuildEndIndex(range, prereleaseEnd)
+}
+
+/**
+ * Finds where a version match ends, without deciding whether the range is valid.
+ * Tries a loose full version first, then a partial or wildcard version, just
+ * like the old regex's LOOSEPLAIN and XRANGEPLAIN alternatives.
+ *
+ * @param {string} range The text to read; it is not changed.
+ * @param {number} start The position of a number or wildcard, after any prefix.
+ * @param {DigitRunCache} digitRuns Shared digit-run cache, updated as needed.
+ * @returns {number} The position where scanning the next candidate can resume.
+ * @example findVersionEndIndex('1.2.3 <2', 0, digitRuns) // 5, at the space
+ * @example findVersionEndIndex('1.x <2', 0, digitRuns) // 3, at the space
+ */
+const findVersionEndIndex = (range, start, digitRuns) => {
+  const fullVersionEnd = findLooseFullVersionEndIndex(range, start, digitRuns)
+  return fullVersionEnd !== start
+    ? fullVersionEnd
+    : findPartialVersionEndIndex(range, start, digitRuns)
+}
+
+/**
+ * Finds the one whitespace character the old replacement would remove.
+ * Keeps leading whitespace, skips an optional operator, and checks immediately
+ * after it. Returns -1 if there is nothing to remove.
+ *
+ * @param {string} range The text containing a candidate already found by the caller.
+ * @param {number} matchStart The candidate's position, including leading whitespace.
+ * @returns {number} The position of the removable whitespace, or -1 if absent.
+ * @example findRemovableWhitespaceIndex(' > 1', 0) // 2; keep the space at position 0
+ * @example findRemovableWhitespaceIndex('>1', 0) // -1
+ */
+const findRemovableWhitespaceIndex = (range, matchStart) => {
+  let position = matchStart
+  if (isWhitespace(range[position])) {
+    position++
+  }
+  if (range[position] === '<' || range[position] === '>') {
+    position++
+  }
+  if (range[position] === '=') {
+    position++
+  }
+  return isWhitespace(range[position]) ? position : -1
+}
+
+/**
+ * Joins an operator to its version, turning > 1.2.3 into >1.2.3.
+ * Copies everything else according to the old regex's matching rules.
+ * Moves forward through prefixes and whole versions to avoid repeatedly
+ * searching the same characters on long inputs.
+ *
+ * @param {string} range The range text to process; the original string is unchanged.
+ * @returns {string} The range with matched operator whitespace removed.
+ * @example trimComparatorWhitespace('> 1.2.3 < 2') // '>1.2.3 <2'
+ * @example trimComparatorWhitespace('> invalid') // '> invalid'
+ */
+const trimComparatorWhitespace = range => {
+  let result = ''
+  let copyFrom = 0
+  let cursor = 0
+  const digitRuns = { start: -1, end: -1, previousStart: -1, previousEnd: -1 }
+
+  while (cursor < range.length) {
+    const matchStart = cursor
+    if (range[cursor] === '<' || range[cursor] === '>') {
+      cursor++
+    } else if (!isVersionPrefix(range[cursor]) && !isVersionStart(range[cursor])) {
+      cursor++
+      continue
+    }
+
+    // Consume a v/=/whitespace run once, even when no version follows it.
+    while (cursor < range.length && isVersionPrefix(range[cursor])) {
+      cursor++
+    }
+    if (!isVersionStart(range[cursor])) {
+      continue
+    }
+
+    const whitespacePosition = findRemovableWhitespaceIndex(range, matchStart)
+    if (whitespacePosition !== -1) {
+      result += range.slice(copyFrom, whitespacePosition)
+      copyFrom = whitespacePosition + 1
+    }
+
+    // Skip the entire match, so a prerelease's trailing v cannot be
+    // reconsidered as the prefix of another version.
+    cursor = findVersionEndIndex(range, cursor, digitRuns)
+  }
+
+  return result + range.slice(copyFrom)
+}
+
+module.exports = trimComparatorWhitespace
+
+
+/***/ }),
+
+/***/ 940:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
 // Determine if version is greater than all the versions possible in the range.
-const outside = __nccwpck_require__(6647)
+const outside = __nccwpck_require__(5472)
 const gtr = (version, range, options) => outside(version, range, '>', options)
 module.exports = gtr
 
 
 /***/ }),
 
-/***/ 1064:
+/***/ 6465:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(4027)
+const Range = __nccwpck_require__(9046)
 const intersects = (r1, r2, options) => {
   r1 = new Range(r1, options)
   r2 = new Range(r2, options)
@@ -5206,12 +5726,12 @@ module.exports = intersects
 
 /***/ }),
 
-/***/ 8282:
+/***/ 9605:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const outside = __nccwpck_require__(6647)
+const outside = __nccwpck_require__(5472)
 // Determine if version is less than all the versions possible in the range
 const ltr = (version, range, options) => outside(version, range, '<', options)
 module.exports = ltr
@@ -5219,13 +5739,13 @@ module.exports = ltr
 
 /***/ }),
 
-/***/ 5808:
+/***/ 5377:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
-const Range = __nccwpck_require__(4027)
+const SemVer = __nccwpck_require__(1603)
+const Range = __nccwpck_require__(9046)
 
 const maxSatisfying = (versions, range, options) => {
   let max = null
@@ -5253,13 +5773,13 @@ module.exports = maxSatisfying
 
 /***/ }),
 
-/***/ 9162:
+/***/ 2235:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
-const Range = __nccwpck_require__(4027)
+const SemVer = __nccwpck_require__(1603)
+const Range = __nccwpck_require__(9046)
 const minSatisfying = (versions, range, options) => {
   let min = null
   let minSV = null
@@ -5286,14 +5806,14 @@ module.exports = minSatisfying
 
 /***/ }),
 
-/***/ 8449:
+/***/ 2210:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
-const Range = __nccwpck_require__(4027)
-const gt = __nccwpck_require__(5152)
+const SemVer = __nccwpck_require__(1603)
+const Range = __nccwpck_require__(9046)
+const gt = __nccwpck_require__(5743)
 
 const minVersion = (range, loose) => {
   range = new Range(range, loose)
@@ -5356,20 +5876,20 @@ module.exports = minVersion
 
 /***/ }),
 
-/***/ 6647:
+/***/ 5472:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const SemVer = __nccwpck_require__(8667)
-const Comparator = __nccwpck_require__(2980)
+const SemVer = __nccwpck_require__(1603)
+const Comparator = __nccwpck_require__(5275)
 const { ANY } = Comparator
-const Range = __nccwpck_require__(4027)
-const satisfies = __nccwpck_require__(2170)
-const gt = __nccwpck_require__(5152)
-const lt = __nccwpck_require__(2583)
-const lte = __nccwpck_require__(3796)
-const gte = __nccwpck_require__(9213)
+const Range = __nccwpck_require__(9046)
+const satisfies = __nccwpck_require__(883)
+const gt = __nccwpck_require__(5743)
+const lt = __nccwpck_require__(3896)
+const lte = __nccwpck_require__(7221)
+const gte = __nccwpck_require__(972)
 
 const outside = (version, range, hilo, options) => {
   version = new SemVer(version, options)
@@ -5445,7 +5965,7 @@ module.exports = outside
 
 /***/ }),
 
-/***/ 3145:
+/***/ 7076:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
@@ -5453,8 +5973,8 @@ module.exports = outside
 // given a set of versions and a range, create a "simplified" range
 // that includes the same versions that the original range does
 // If the original range is shorter than the simplified one, return that.
-const satisfies = __nccwpck_require__(2170)
-const compare = __nccwpck_require__(676)
+const satisfies = __nccwpck_require__(883)
+const compare = __nccwpck_require__(6061)
 module.exports = (versions, range, options) => {
   const set = []
   let first = null
@@ -5501,16 +6021,16 @@ module.exports = (versions, range, options) => {
 
 /***/ }),
 
-/***/ 3620:
+/***/ 6585:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(4027)
-const Comparator = __nccwpck_require__(2980)
+const Range = __nccwpck_require__(9046)
+const Comparator = __nccwpck_require__(5275)
 const { ANY } = Comparator
-const satisfies = __nccwpck_require__(2170)
-const compare = __nccwpck_require__(676)
+const satisfies = __nccwpck_require__(883)
+const compare = __nccwpck_require__(6061)
 
 // Complex range `r1 || r2 || ...` is a subset of `R1 || R2 || ...` iff:
 // - Every simple range `r1, r2, ...` is a null set, OR
@@ -5757,12 +6277,12 @@ module.exports = subset
 
 /***/ }),
 
-/***/ 3259:
+/***/ 9830:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(4027)
+const Range = __nccwpck_require__(9046)
 
 // Mostly just for testing and legacy API reasons
 const toComparators = (range, options) =>
@@ -5774,12 +6294,12 @@ module.exports = toComparators
 
 /***/ }),
 
-/***/ 374:
+/***/ 7705:
 /***/ ((module, __unused_webpack_exports, __nccwpck_require__) => {
 
 
 
-const Range = __nccwpck_require__(4027)
+const Range = __nccwpck_require__(9046)
 const validRange = (range, options) => {
   try {
     // Return '*' instead of '' so that truthiness works.
@@ -6410,7 +6930,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 4702:
+/***/ 3009:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6430,7 +6950,7 @@ exports.HttpClient = exports.HttpClientResponse = exports.HttpCodes = void 0;
 exports.isHttps = isHttps;
 const http = __nccwpck_require__(8611);
 const https = __nccwpck_require__(5692);
-const util = __nccwpck_require__(4653);
+const util = __nccwpck_require__(6930);
 let fs;
 let tunnel;
 var HttpCodes;
@@ -6931,7 +7451,7 @@ exports.HttpClient = HttpClient;
 
 /***/ }),
 
-/***/ 4653:
+/***/ 6930:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 
@@ -6951,7 +7471,7 @@ exports.getUrl = getUrl;
 exports.decompressGzippedContent = decompressGzippedContent;
 exports.buildProxyBypassRegexFromEnv = buildProxyBypassRegexFromEnv;
 exports.obtainContentCharset = obtainContentCharset;
-const qs = __nccwpck_require__(4515);
+const qs = __nccwpck_require__(6624);
 const zlib = __nccwpck_require__(3106);
 /**
  * creates an url from a request url and optional base url (http://server:8080)
@@ -38537,8 +39057,8 @@ function getInstallPath(platform) {
     }
 }
 
-// EXTERNAL MODULE: ./node_modules/.pnpm/semver@7.8.5/node_modules/semver/index.js
-var node_modules_semver = __nccwpck_require__(8113);
+// EXTERNAL MODULE: ./node_modules/.pnpm/semver@7.8.6/node_modules/semver/index.js
+var node_modules_semver = __nccwpck_require__(2320);
 ;// CONCATENATED MODULE: ./node_modules/.pnpm/@actions+tool-cache@4.0.0/node_modules/@actions/tool-cache/lib/manifest.js
 var manifest_awaiter = (undefined && undefined.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -39384,8 +39904,8 @@ async function downloadAndExtractZip(url) {
     throw new Error(`Failed to download and extract ChromeDriver from ${url} after ${maxRetries} attempts: ${message}`);
 }
 
-// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@3.1.2/node_modules/typed-rest-client/HttpClient.js
-var typed_rest_client_HttpClient = __nccwpck_require__(4702);
+// EXTERNAL MODULE: ./node_modules/.pnpm/typed-rest-client@3.1.3/node_modules/typed-rest-client/HttpClient.js
+var typed_rest_client_HttpClient = __nccwpck_require__(3009);
 ;// CONCATENATED MODULE: ./lib/installer/http.js
 /**
  * HTTP helpers used by the TypeScript rewrite of setup-chromedriver.
