@@ -50,3 +50,10 @@ overrides:
   # js-yaml 3→4 の API 差異 (safeLoad
   # 削除等) の影響を受けない。3 系のみを対象にするためセレクタを付ける。
   js-yaml@^3: '^4.2.0'
+  # minimatch: GHSA-g3hv-75wg-m249 (>=7.0.0 <11.0.1、修正は 11.0.1 以降のみで
+  # 9.x / 10.x へのバックポートなし)。jest 経由の glob@10 / glob@13 /
+  # test-exclude が minimatch@^9 / ^10 を要求し、最新の上流も 11 系を使わない
+  # ため override で 11 系へ引き上げる。dev 専用で dist には含まれない。
+  # 11 系は API の破壊的変更 (Minimatch.set の要素、makeRe() 削除等) を含むが、
+  # jest のテスト一式が通ることを確認済み。上流が 11 系へ追従したら撤去する。
+  'minimatch@<11.0.1': '^11.0.1'
