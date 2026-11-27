@@ -1,5 +1,6 @@
 import * as core from "@actions/core";
 import * as os from "os";
+import { mapArchitecture } from "./chromedriver-helper.js";
 import { installOnUnix } from "./installer/unix.js";
 import { installOnWindows } from "./installer/windows.js";
 
@@ -13,24 +14,11 @@ async function run() {
     );
     const version = core.getInput("chromedriver-version", { required: false });
     const chromeapp = core.getInput("chromeapp", { required: false });
-    const plat = process.platform;
-    let arch: string;
-    switch (plat) {
-      case "win32":
-        arch = plat;
-        break;
-      case "darwin":
-        // Check if running on ARM64 macOS (Apple Silicon)
-        if (os.arch() === "arm64") {
-          arch = "mac-arm64";
-        } else {
-          arch = "mac64";
-        }
-        break;
-      default:
-      case "linux":
-        arch = "linux64";
-    }
+    // win32 / mac-arm64 / mac64 / linux-arm64 / linux64. Windows always maps to
+    // win32 here; on Windows on Arm the x64 (win64) ChromeDriver is installed
+    // and runs under emulation, since Chrome for Testing ships no win-arm64
+    // build.
+    const arch = mapArchitecture(process.platform, os.arch());
     if (arch == "win32") {
       await installOnWindows({ version, chromeapp });
     } else {

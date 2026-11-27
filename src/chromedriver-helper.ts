@@ -51,10 +51,35 @@ export function mapArchitecture(
     case "darwin":
       return arch === "arm64" ? "mac-arm64" : "mac64";
     case "linux":
-      return "linux64";
+      return arch === "arm64" ? "linux-arm64" : "linux64";
     default:
       return "linux64";
   }
+}
+
+/**
+ * Whether the (mapped) arch is a Linux one, i.e. takes the apt dependency
+ * installation path in the Unix installer.
+ */
+export function isLinuxArch(arch: string): boolean {
+  return arch === "linux64" || arch === "linux-arm64";
+}
+
+/**
+ * Map a Linux ChromeDriver arch to the Debian architecture name used in the
+ * Google Chrome apt source line (`deb [arch=...]`).
+ */
+export function convertArchForApt(arch: string): string {
+  return arch === "linux-arm64" ? "arm64" : "amd64";
+}
+
+// Chrome for Testing publishes `linux-arm64` builds starting with
+// 153.0.8001.0. Neither the legacy (<115) storage API nor the earlier Chrome
+// for Testing releases ship a Linux arm64 ChromeDriver.
+export const LINUX_ARM64_MIN_MAJOR_VERSION = 153;
+
+export function isSupportedLinuxArm64Version(majorVersion: number): boolean {
+  return majorVersion >= LINUX_ARM64_MIN_MAJOR_VERSION;
 }
 
 export function convertArchForLegacyAPI(arch: string): string {
