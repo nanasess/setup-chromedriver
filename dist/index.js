@@ -39265,7 +39265,7 @@ function error(message, properties = {}) {
  * @param properties optional properties to add to the annotation.
  */
 function warning(message, properties = {}) {
-    command_issueCommand('warning', utils_toCommandProperties(properties), message instanceof Error ? message.toString() : message);
+    issueCommand('warning', toCommandProperties(properties), message instanceof Error ? message.toString() : message);
 }
 /**
  * Adds a notice issue
@@ -40927,9 +40927,9 @@ async function installOnWindows(opts) {
 async function run() {
     try {
         console.log(`##setup chromedriver`);
-        warning("nanasess/setup-chromedriver@master is deprecated and no longer maintained. " +
-            "Please switch to a release tag: uses: nanasess/setup-chromedriver@v3 " +
-            "(or pin a full commit SHA). The master branch will not receive future updates.");
+        // The "@master is deprecated" warning (#463) lives only on the frozen
+        // `master` branch, which `@master` consumers execute. It must not be added
+        // here: releases are cut from `main`, so it would warn every `@v3` user.
         const version = getInput("chromedriver-version", { required: false });
         const chromeapp = getInput("chromeapp", { required: false });
         // win32 / mac-arm64 / mac64 / linux-arm64 / linux64. Windows always maps to
