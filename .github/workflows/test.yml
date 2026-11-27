@@ -21,6 +21,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-22.04
           - macos-latest
+          - macos-26
           - macos-15
         chrome_version:
           - 'current'
@@ -84,6 +85,7 @@ jobs:
           - ubuntu-24.04
           - ubuntu-22.04
           - macos-latest
+          - macos-26
           - macos-15
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
