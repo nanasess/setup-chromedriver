@@ -156,11 +156,11 @@ jobs:
 
 ## 🖥️ Platform Support
 
-| Platform    | Versions                                          |
-|-------------|---------------------------------------------------|
-| **Ubuntu**  | `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-22.04`   |
-| **macOS**   | `macos-latest`, `macos-15`, `macos-14`            |
-| **Windows** | `windows-latest`, `windows-2025 , windows-2022`   |
+| Platform    | Versions                                                        |
+|-------------|-----------------------------------------------------------------|
+| **Ubuntu**  | `ubuntu-latest`, `ubuntu-26.04`, `ubuntu-24.04`, `ubuntu-22.04` |
+| **macOS**   | `macos-latest`, `macos-15`, `macos-14`                          |
+| **Windows** | `windows-latest`, `windows-2025 , windows-2022`                 |
 
 ## ⚙️ Configuration
 

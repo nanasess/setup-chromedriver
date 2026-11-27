@@ -43,8 +43,9 @@ jobs:
           - "debian:stable-slim"
           - "debian:trixie-slim" # Debian 13 trixie (newest apt)
           # Ubuntu family (distinct apt ecosystem)
-          - "ubuntu:24.04"      # current Ubuntu LTS
-          - "ubuntu:22.04"      # previous Ubuntu LTS
+          - "ubuntu:26.04"      # current Ubuntu LTS
+          - "ubuntu:24.04"      # previous Ubuntu LTS
+          - "ubuntu:22.04"      # oldest supported Ubuntu LTS
     container:
       image: ${{ matrix.image }}
     steps:
