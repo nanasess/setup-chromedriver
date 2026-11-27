@@ -3,6 +3,10 @@ import {
   parseVersion3,
   isLegacyVersion,
   mapArchitecture,
+  isLinuxArch,
+  convertArchForApt,
+  isSupportedLinuxArm64Version,
+  LINUX_ARM64_MIN_MAJOR_VERSION,
   convertArchForLegacyAPI,
   convertArchForModernAPI,
   buildLegacyLatestReleaseUrl,
@@ -136,8 +140,55 @@ describe("mapArchitecture", () => {
     expect(mapArchitecture("darwin", "arm64")).toBe("mac-arm64");
   });
 
+  it("maps linux arm64", () => {
+    expect(mapArchitecture("linux" as NodeJS.Platform, "arm64")).toBe(
+      "linux-arm64",
+    );
+  });
+
   it("maps win32", () => {
     expect(mapArchitecture("win32", "x64")).toBe("win32");
+  });
+
+  it("maps win32 arm64 to win32 (x64 build runs under emulation)", () => {
+    expect(mapArchitecture("win32", "arm64")).toBe("win32");
+  });
+});
+
+describe("isLinuxArch", () => {
+  it("returns true for linux64 and linux-arm64", () => {
+    expect(isLinuxArch("linux64")).toBe(true);
+    expect(isLinuxArch("linux-arm64")).toBe(true);
+  });
+
+  it("returns false for mac and win arches", () => {
+    expect(isLinuxArch("mac64")).toBe(false);
+    expect(isLinuxArch("mac-arm64")).toBe(false);
+    expect(isLinuxArch("win32")).toBe(false);
+  });
+});
+
+describe("convertArchForApt", () => {
+  it("maps linux64 to amd64", () => {
+    expect(convertArchForApt("linux64")).toBe("amd64");
+  });
+
+  it("maps linux-arm64 to arm64", () => {
+    expect(convertArchForApt("linux-arm64")).toBe("arm64");
+  });
+});
+
+describe("isSupportedLinuxArm64Version", () => {
+  it("accepts the first major with linux-arm64 builds and later", () => {
+    expect(LINUX_ARM64_MIN_MAJOR_VERSION).toBe(153);
+    expect(isSupportedLinuxArm64Version(153)).toBe(true);
+    expect(isSupportedLinuxArm64Version(158)).toBe(true);
+  });
+
+  it("rejects modern majors before 153 and legacy majors", () => {
+    expect(isSupportedLinuxArm64Version(152)).toBe(false);
+    expect(isSupportedLinuxArm64Version(131)).toBe(false);
+    expect(isSupportedLinuxArm64Version(114)).toBe(false);
   });
 });
 

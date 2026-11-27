@@ -27,11 +27,15 @@ import * as io from "@actions/io";
 import * as path from "path";
 
 import {
+  convertArchForApt,
   convertArchForLegacyAPI,
   convertArchForModernAPI,
   buildLegacyDownloadUrl,
   getDefaultChromePath,
   getInstallPath,
+  isLinuxArch,
+  isSupportedLinuxArm64Version,
+  LINUX_ARM64_MIN_MAJOR_VERSION,
   parseMajorVersion,
   isLegacyVersion,
 } from "../chromedriver-helper.js";
@@ -98,9 +102,9 @@ async function commandExists(command: string): Promise<boolean> {
 }
 
 /**
- * Install the apt dependencies required for the linux64 arch: the Chrome
- * package itself (via the Google apt repository) plus `unzip` and, when
- * missing, `sudo`.
+ * Install the apt dependencies required for the Linux arches (linux64 /
+ * linux-arm64): the Chrome package itself (via the Google apt repository) plus
+ * `unzip` and, when missing, `sudo`.
  *
  * Resolves to `void`. The `chromeapp` default (`google-chrome-stable`) is
  * applied by the caller (`installOnUnix`) so that it propagates to version
@@ -109,6 +113,7 @@ async function commandExists(command: string): Promise<boolean> {
 async function installLinuxDependencies(
   sudo: string,
   chromeapp: string,
+  arch: string,
 ): Promise<void> {
   // `if [[ -z "${CHROMEAPP}" ]]; then CHROMEAPP=google-chrome-stable; fi`
   const chromeApp = chromeapp || "google-chrome-stable";
@@ -153,9 +158,13 @@ async function installLinuxDependencies(
     });
     // `echo "deb [arch=amd64 signed-by=...] ..." | ${sudo} tee google.list >/dev/null`
     // Same piped-tee-via-stdin pattern; the repo line now pins the keyring.
+    // The Google repository serves both amd64 and arm64 packages, so the
+    // source line follows the host arch (amd64 for linux64, arm64 for
+    // linux-arm64) instead of the original hard-coded `arch=amd64`.
+    const aptArch = convertArchForApt(arch);
     await runWithSudo(sudo, "tee", ["/etc/apt/sources.list.d/google.list"], {
       input: Buffer.from(
-        `deb [arch=amd64 signed-by=${GOOGLE_KEYRING_PATH}] https://dl.google.com/linux/chrome/deb/ stable main\n`,
+        `deb [arch=${aptArch} signed-by=${GOOGLE_KEYRING_PATH}] https://dl.google.com/linux/chrome/deb/ stable main\n`,
       ),
       // Mirror the original `>/dev/null` (suppress tee echoing stdin to stdout).
       silent: true,
@@ -229,7 +238,8 @@ export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
   const sudo = await resolveSudo();
 
   // `if [[ "${ARCH}" =~ ^linux64 ]]; then` ... apt dependency installation.
-  if (arch.startsWith("linux64")) {
+  // Extended to linux-arm64, which uses the same Google apt repository.
+  if (isLinuxArch(arch)) {
     // `if [[ -z "${CHROMEAPP}" ]]; then CHROMEAPP=google-chrome-stable; fi`
     // The shell assigns this default to CHROMEAPP at the top of the linux64
     // block, and it persists for the rest of the script (version detection and
@@ -238,7 +248,7 @@ export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
     if (!chromeapp) {
       chromeapp = "google-chrome-stable";
     }
-    await installLinuxDependencies(sudo, chromeapp);
+    await installLinuxDependencies(sudo, chromeapp, arch);
   }
 
   // `if [[ "${ARCH}" =~ ^mac && -z "${CHROMEAPP}" ]]; then CHROMEAPP=...; fi`
@@ -258,6 +268,17 @@ export async function installOnUnix(opts: InstallOnUnixOptions): Promise<void> {
     majorVersion = parseMajorVersion(detectedFullVersion);
   }
   core.info(`CHROME_VERSION=${majorVersion}`);
+
+  // Linux arm64 ChromeDriver builds only exist from Chrome for Testing 153
+  // onward: there is none in the legacy (<115) API nor in Chrome for Testing
+  // 115-152. Fail with an explicit message instead of a generic "could not
+  // resolve a download URL" (or a 404 from the legacy storage).
+  if (arch === "linux-arm64" && !isSupportedLinuxArm64Version(majorVersion)) {
+    throw new Error(
+      `ChromeDriver ${version || detectedFullVersion} is not available for linux-arm64. ` +
+        `Linux arm64 builds are only published for Chrome ${LINUX_ARM64_MIN_MAJOR_VERSION} and later.`,
+    );
+  }
 
   const installPath = getInstallPath(platform);
 

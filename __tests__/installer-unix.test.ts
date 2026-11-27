@@ -239,6 +239,75 @@ describe("installOnUnix - linux apt dependency installation", () => {
     expect(aptGetInstall!.args).toContain("google-chrome-stable");
   });
 
+  test("linux-arm64 writes google.list with arch=arm64 and installs chrome", async () => {
+    setPresentCommands(["sudo", "dpkg", "unzip"]);
+    execMock.mockImplementation(async (command: string, args?: string[]) => {
+      if (command === "dpkg" && args && args[0] === "-s") {
+        return 1; // not installed (arm runners ship no Chrome)
+      }
+      return 0;
+    });
+
+    await installOnUnix({
+      version: "158.0.8127.88",
+      arch: "linux-arm64",
+      chromeapp: "",
+    });
+
+    const calls = execCalls();
+    const listTee = calls.find((c) =>
+      c.args.includes("/etc/apt/sources.list.d/google.list"),
+    );
+    expect(listTee).toBeDefined();
+    const listInput = (
+      listTee!.options?.input as Buffer | undefined
+    )?.toString();
+    expect(listInput).toContain(
+      "deb [arch=arm64 signed-by=/usr/share/keyrings/google-chrome.asc] https://dl.google.com/linux/chrome/deb/ stable main",
+    );
+    expect(listInput).not.toContain("arch=amd64");
+
+    const aptGetInstall = calls.find(
+      (c) =>
+        (c.command === "apt-get" || c.args.includes("apt-get")) &&
+        c.args.includes("install"),
+    );
+    expect(aptGetInstall).toBeDefined();
+    expect(aptGetInstall!.args).toContain("google-chrome-stable");
+  });
+
+  test.each([
+    ["131.0.6778.204", "modern < 153"],
+    ["152", "major-only < 153"],
+    ["114.0.5735.90", "legacy < 115"],
+  ])("linux-arm64 rejects %s (%s) without downloading", async (version) => {
+    setPresentCommands(["sudo", "dpkg", "unzip", "google-chrome-stable"]);
+    execMock.mockResolvedValue(0);
+
+    await expect(
+      installOnUnix({ version, arch: "linux-arm64", chromeapp: "" }),
+    ).rejects.toThrow(
+      `ChromeDriver ${version} is not available for linux-arm64`,
+    );
+
+    expect(resolveModernDownload).not.toHaveBeenCalled();
+    expect(resolveLegacyVersion).not.toHaveBeenCalled();
+    expect(downloadAndExtractZip).not.toHaveBeenCalled();
+  });
+
+  test("linux-arm64 rejects a detected Chrome < 153 with the detected version", async () => {
+    setPresentCommands(["sudo", "dpkg", "unzip", "google-chrome-stable"]);
+    execMock.mockResolvedValue(0);
+    detectFullChromeVersion.mockResolvedValue("131.0.6778.204");
+
+    await expect(
+      installOnUnix({ version: "", arch: "linux-arm64", chromeapp: "" }),
+    ).rejects.toThrow(
+      "ChromeDriver 131.0.6778.204 is not available for linux-arm64",
+    );
+    expect(downloadAndExtractZip).not.toHaveBeenCalled();
+  });
+
   test("throws when the downloaded signing key is not a valid PGP block", async () => {
     setPresentCommands(["sudo", "dpkg", "unzip"]);
     execMock.mockImplementation(async (command: string, args?: string[]) => {
@@ -428,6 +497,33 @@ describe("installOnUnix - modern (>=115)", () => {
     expect(move.source).toBe(
       path.join("/tmp/mac", "chromedriver-mac-x64", "chromedriver"),
     );
+  });
+
+  test("modern linux-arm64 resolves and moves from chromedriver-linux-arm64/", async () => {
+    setPresentCommands(["sudo", "dpkg", "unzip", "google-chrome-stable"]);
+    execMock.mockResolvedValue(0);
+    downloadAndExtractZip.mockResolvedValue("/tmp/arm");
+    resolveModernDownload.mockResolvedValue({
+      version: "158.0.8127.88",
+      url: "https://example.com/chromedriver-linux-arm64.zip",
+    });
+
+    await installOnUnix({
+      version: "158.0.8127.88",
+      arch: "linux-arm64",
+      chromeapp: "",
+    });
+
+    // linux-arm64 is passed through unchanged to Chrome for Testing.
+    expect(resolveModernDownload).toHaveBeenCalledWith(
+      "158.0.8127.88",
+      "linux-arm64",
+    );
+    const move = findMove();
+    expect(move.source).toBe(
+      path.join("/tmp/arm", "chromedriver-linux-arm64", "chromedriver"),
+    );
+    expect(move.dest).toBe(INSTALL_PATH);
   });
 
   test("empty chromeapp + empty version on mac defaults to the macOS Chrome path for version detection", async () => {
