@@ -54,7 +54,7 @@ overrides:
   # 9.x / 10.x へのバックポートなし)。jest 経由の glob@10 / glob@13 /
   # test-exclude が minimatch@^9 / ^10 を要求し、最新の上流も 11 系を使わない
   # ため override で 11 系へ引き上げる。dev 専用で dist には含まれない。
-  # 上流が 11 系へ追従したら撤去する。
+  # 撤去条件は下の glob と共通 (glob の項を参照)。
   'minimatch@<11.0.1': '^11.0.1'
   # glob: minimatch 11 は Minimatch.set のワイルドカード部分を RegExp ではなく
   # Matcher で返すが、glob 13 以前の Processor は string / GLOBSTAR / RegExp
@@ -63,5 +63,12 @@ overrides:
   # projects で使う glob.sync が壊れる。jest のテスト一式は通ってしまうので
   # テストでは検出できない)。そこで minimatch 11 対応の glob 14 系へ揃える。
   # あわせて GHSA-3g3m-2fjr-6pw4 (glob >=9.0.0 <=14.0.1、修正 14.0.2) も
-  # 解消する。jest が glob 14 系を使うようになったら minimatch と一緒に撤去する。
+  # 解消する。
+  # 撤去条件 (minimatch と共通): jest 本体 (jest-runtime / jest-config /
+  # @jest/reporters の glob) だけでなく、babel-plugin-istanbul 経由の
+  # test-exclude が要求する glob と minimatch も含め、すべての推移的依存が
+  # 修正済みの版 (glob >=14.0.2 / minimatch >=11.0.1) を要求するようになって
+  # から両方を同時に撤去する。一部の経路だけを見て撤去すると修正前の版が戻る。
+  # 撤去前に override を外した状態で `pnpm why glob` / `pnpm why minimatch`
+  # を実行し、修正前の版が残っていないことを確かめる。
   'glob@<14.0.2': '^14.0.2'
