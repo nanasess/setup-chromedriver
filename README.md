@@ -156,11 +156,24 @@ jobs:
 
 ## 🖥️ Platform Support
 
-| Platform    | Versions                                          |
-|-------------|---------------------------------------------------|
-| **Ubuntu**  | `ubuntu-latest`, `ubuntu-24.04`, `ubuntu-22.04`   |
-| **macOS**   | `macos-latest`, `macos-15`, `macos-14`            |
-| **Windows** | `windows-latest`, `windows-2025 , windows-2022`   |
+| Platform          | Versions                                                                 |
+|-------------------|--------------------------------------------------------------------------|
+| **Ubuntu**        | `ubuntu-latest`, `ubuntu-26.04`, `ubuntu-24.04`, `ubuntu-22.04`          |
+| **Ubuntu (Arm)**  | `ubuntu-26.04-arm`, `ubuntu-24.04-arm`, `ubuntu-22.04-arm`               |
+| **macOS**         | `macos-latest`, `macos-26`, `macos-15` (Apple Silicon)                   |
+| **Windows**       | `windows-latest`, `windows-2025`, `windows-2022`                         |
+| **Windows (Arm)** | `windows-11-arm`                                                         |
+
+#### Notes on Arm runners
+
+- **Ubuntu (Arm)**: the native `linux-arm64` ChromeDriver is installed. Chrome
+  for Testing only publishes it for **Chrome 153 and later**, so older
+  `chromedriver-version` values (including the legacy `< 115` releases) fail
+  with an explicit error. The GitHub-hosted Arm images ship no Google Chrome;
+  the action installs `google-chrome-stable` (arm64) from Google's apt
+  repository when it is missing.
+- **Windows (Arm)**: Chrome for Testing has no `win-arm64` ChromeDriver, so the
+  x64 (`win64`) build is installed and runs under Windows' x64 emulation.
 
 ## ⚙️ Configuration
 

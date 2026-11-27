@@ -19,6 +19,12 @@ name: "Test ChromeDriver version resolution"
 # Chrome of a matching version is needed and no browser is launched. We only
 # assert that `chromedriver --version` reports the expected version.
 #
+# The `resolve-linux-arm64` job covers the Linux arm runners separately:
+# Chrome for Testing only publishes `linux-arm64` builds from 153.0.8001.0, so
+# the 115 / 131 cases above cannot run there. It uses the 153 boundary for the
+# same exact / fallback / major-only branches, and asserts that versions with no
+# linux-arm64 build (Chrome for Testing < 153, legacy < 115) fail.
+#
 # `uses: ./` exercises the action code of the current commit (the native
 # TypeScript implementation).
 #
@@ -42,14 +48,18 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-26.04
           - ubuntu-24.04
           - ubuntu-22.04
           - macos-latest
+          - macos-26
           - macos-15
-          - macos-14
           - windows-latest
           - windows-2025
           - windows-2022
+          # Windows on Arm: there is no win-arm64 ChromeDriver, so the x64
+          # (win64) build is installed and runs under emulation.
+          - windows-11-arm
         case:
           # modern boundary: first version above the <115 legacy split
           - version: "115.0.5790.170"
@@ -94,3 +104,59 @@ jobs:
             Write-Error "Expected to contain '$Env:EXPECT', got: $out"
             exit 1
           }
+
+  resolve-linux-arm64:
+    name: "${{ matrix.os }} / ${{ matrix.case.version }}"
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-26.04-arm
+          - ubuntu-24.04-arm
+          - ubuntu-22.04-arm
+        case:
+          # boundary: the first Chrome for Testing release with linux-arm64
+          - version: "153.0.8001.0"
+            expect: "153.0.8001.0"
+          # version3 fallback: nonexistent patch -> last 153.0.8010.*
+          - version: "153.0.8010.999"
+            expect: "153.0.8010."
+          # major-only: version3 fallback for an input with no minor/build
+          - version: "153"
+            expect: "153."
+          # no linux-arm64 build: Chrome for Testing < 153 must fail
+          - version: "131.0.6778.204"
+            expect_error: true
+          # no linux-arm64 build: legacy (< 115) must fail
+          - version: "114.0.5735.90"
+            expect_error: true
+    env:
+      EXPECT: ${{ matrix.case.expect }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # chromeapp is left empty: the arm runners ship no Chrome, so the action
+      # installs google-chrome-stable (arm64) from the Google apt repository.
+      - id: install
+        uses: ./
+        continue-on-error: ${{ matrix.case.expect_error == true }}
+        with:
+          chromedriver-version: ${{ matrix.case.version }}
+
+      - if: matrix.case.expect_error != true
+        shell: bash
+        run: |
+          file /usr/local/bin/chromedriver
+          file /usr/local/bin/chromedriver | grep -F 'ARM aarch64'
+          chromedriver --version
+          chromedriver --version | grep -F "$EXPECT"
+      - if: matrix.case.expect_error == true
+        shell: bash
+        env:
+          OUTCOME: ${{ steps.install.outcome }}
+        run: |
+          echo "install outcome: $OUTCOME"
+          test "$OUTCOME" = failure

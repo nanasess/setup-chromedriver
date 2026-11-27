@@ -38469,10 +38469,31 @@ function mapArchitecture(platform, arch) {
         case "darwin":
             return arch === "arm64" ? "mac-arm64" : "mac64";
         case "linux":
-            return "linux64";
+            return arch === "arm64" ? "linux-arm64" : "linux64";
         default:
             return "linux64";
     }
+}
+/**
+ * Whether the (mapped) arch is a Linux one, i.e. takes the apt dependency
+ * installation path in the Unix installer.
+ */
+function isLinuxArch(arch) {
+    return arch === "linux64" || arch === "linux-arm64";
+}
+/**
+ * Map a Linux ChromeDriver arch to the Debian architecture name used in the
+ * Google Chrome apt source line (`deb [arch=...]`).
+ */
+function convertArchForApt(arch) {
+    return arch === "linux-arm64" ? "arm64" : "amd64";
+}
+// Chrome for Testing publishes `linux-arm64` builds starting with
+// 153.0.8001.0. Neither the legacy (<115) storage API nor the earlier Chrome
+// for Testing releases ship a Linux arm64 ChromeDriver.
+const LINUX_ARM64_MIN_MAJOR_VERSION = 153;
+function isSupportedLinuxArm64Version(majorVersion) {
+    return majorVersion >= LINUX_ARM64_MIN_MAJOR_VERSION;
 }
 function convertArchForLegacyAPI(arch) {
     // Legacy API doesn't have mac-arm64, use mac64 instead
@@ -39665,15 +39686,15 @@ async function commandExists(command) {
     return found !== "";
 }
 /**
- * Install the apt dependencies required for the linux64 arch: the Chrome
- * package itself (via the Google apt repository) plus `unzip` and, when
- * missing, `sudo`.
+ * Install the apt dependencies required for the Linux arches (linux64 /
+ * linux-arm64): the Chrome package itself (via the Google apt repository) plus
+ * `unzip` and, when missing, `sudo`.
  *
  * Resolves to `void`. The `chromeapp` default (`google-chrome-stable`) is
  * applied by the caller (`installOnUnix`) so that it propagates to version
  * detection as well; this helper only consumes the resolved value.
  */
-async function installLinuxDependencies(sudo, chromeapp) {
+async function installLinuxDependencies(sudo, chromeapp, arch) {
     // `if [[ -z "${CHROMEAPP}" ]]; then CHROMEAPP=google-chrome-stable; fi`
     const chromeApp = chromeapp || "google-chrome-stable";
     // `APP="${CHROMEAPP}"`
@@ -39713,8 +39734,12 @@ async function installLinuxDependencies(sudo, chromeapp) {
         });
         // `echo "deb [arch=amd64 signed-by=...] ..." | ${sudo} tee google.list >/dev/null`
         // Same piped-tee-via-stdin pattern; the repo line now pins the keyring.
+        // The Google repository serves both amd64 and arm64 packages, so the
+        // source line follows the host arch (amd64 for linux64, arm64 for
+        // linux-arm64) instead of the original hard-coded `arch=amd64`.
+        const aptArch = convertArchForApt(arch);
         await runWithSudo(sudo, "tee", ["/etc/apt/sources.list.d/google.list"], {
-            input: Buffer.from(`deb [arch=amd64 signed-by=${GOOGLE_KEYRING_PATH}] https://dl.google.com/linux/chrome/deb/ stable main\n`),
+            input: Buffer.from(`deb [arch=${aptArch} signed-by=${GOOGLE_KEYRING_PATH}] https://dl.google.com/linux/chrome/deb/ stable main\n`),
             // Mirror the original `>/dev/null` (suppress tee echoing stdin to stdout).
             silent: true,
         });
@@ -39772,7 +39797,8 @@ async function installOnUnix(opts) {
     // `sudo=$(command -v sudo)`
     const sudo = await resolveSudo();
     // `if [[ "${ARCH}" =~ ^linux64 ]]; then` ... apt dependency installation.
-    if (arch.startsWith("linux64")) {
+    // Extended to linux-arm64, which uses the same Google apt repository.
+    if (isLinuxArch(arch)) {
         // `if [[ -z "${CHROMEAPP}" ]]; then CHROMEAPP=google-chrome-stable; fi`
         // The shell assigns this default to CHROMEAPP at the top of the linux64
         // block, and it persists for the rest of the script (version detection and
@@ -39781,7 +39807,7 @@ async function installOnUnix(opts) {
         if (!chromeapp) {
             chromeapp = "google-chrome-stable";
         }
-        await installLinuxDependencies(sudo, chromeapp);
+        await installLinuxDependencies(sudo, chromeapp, arch);
     }
     // `if [[ "${ARCH}" =~ ^mac && -z "${CHROMEAPP}" ]]; then CHROMEAPP=...; fi`
     if (arch.startsWith("mac") && !chromeapp) {
@@ -39800,6 +39826,14 @@ async function installOnUnix(opts) {
         majorVersion = parseMajorVersion(detectedFullVersion);
     }
     info(`CHROME_VERSION=${majorVersion}`);
+    // Linux arm64 ChromeDriver builds only exist from Chrome for Testing 153
+    // onward: there is none in the legacy (<115) API nor in Chrome for Testing
+    // 115-152. Fail with an explicit message instead of a generic "could not
+    // resolve a download URL" (or a 404 from the legacy storage).
+    if (arch === "linux-arm64" && !isSupportedLinuxArm64Version(majorVersion)) {
+        throw new Error(`ChromeDriver ${version || detectedFullVersion} is not available for linux-arm64. ` +
+            `Linux arm64 builds are only published for Chrome ${LINUX_ARM64_MIN_MAJOR_VERSION} and later.`);
+    }
     const installPath = getInstallPath(platform);
     // -------------------------------------------------------------------------
     // Legacy (<115)
@@ -39947,6 +39981,7 @@ async function installOnWindows(opts) {
 
 
 
+
 async function run() {
     try {
         console.log(`##setup chromedriver`);
@@ -39955,25 +39990,11 @@ async function run() {
             "(or pin a full commit SHA). The master branch will not receive future updates.");
         const version = getInput("chromedriver-version", { required: false });
         const chromeapp = getInput("chromeapp", { required: false });
-        const plat = process.platform;
-        let arch;
-        switch (plat) {
-            case "win32":
-                arch = plat;
-                break;
-            case "darwin":
-                // Check if running on ARM64 macOS (Apple Silicon)
-                if (external_os_namespaceObject.arch() === "arm64") {
-                    arch = "mac-arm64";
-                }
-                else {
-                    arch = "mac64";
-                }
-                break;
-            default:
-            case "linux":
-                arch = "linux64";
-        }
+        // win32 / mac-arm64 / mac64 / linux-arm64 / linux64. Windows always maps to
+        // win32 here; on Windows on Arm the x64 (win64) ChromeDriver is installed
+        // and runs under emulation, since Chrome for Testing ships no win-arm64
+        // build.
+        const arch = mapArchitecture(process.platform, external_os_namespaceObject.arch());
         if (arch == "win32") {
             await installOnWindows({ version, chromeapp });
         }

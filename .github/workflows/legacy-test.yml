@@ -34,14 +34,19 @@ jobs:
       matrix:
         os:
           - ubuntu-latest
+          - ubuntu-26.04
           - ubuntu-24.04
           - ubuntu-22.04
           - macos-latest
+          - macos-26
           - macos-15
-          - macos-14
           - windows-latest
           - windows-2025
           - windows-2022
+          # Windows on Arm: the legacy win32 (x86) build runs under emulation.
+          # Linux arm runners are intentionally absent: the legacy API has no
+          # linux-arm64 build (see version-resolution-test.yml).
+          - windows-11-arm
     env:
       # Chrome 114 is the last < 115 release; the action resolves this through
       # the legacy chromedriver.storage.googleapis.com API.
